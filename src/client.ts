@@ -131,7 +131,7 @@ export class ClientFactory {
 
     async createClient(url: string, login: string, password: string) : Promise<Client> {
         const client = new Client(url);
-        await client.init(url, login, password);
+        await client.init(login, password);
         return client;
     }
 }
@@ -142,14 +142,14 @@ export class Client {
     private instance: AxiosInstance;
 
     constructor(url: string) {
-        this.url = url;
+        this.url = url + '/api/v1';
         this.instance = axios;
         return ;
     }
 
-    async init(url: string, login: string, password: string) : Promise<void> {
+    async init(login: string, password: string) : Promise<void> {
         this.instance = axios.create({
-            baseURL: url,
+            baseURL: this.url,
             headers: {
                 'Content-Type': 'application/json;charset=utf-8',
                 'Authorization': `Bearer ${(await this.login(login, password)).auth_token}`
@@ -159,7 +159,7 @@ export class Client {
     }
 
     async login(login: string, password: string) : Promise<User>{
-        const response = await axios.post<User>(`${this.url}/api/v1/auth`, {
+        const response = await axios.post<User>(`${this.url}/auth`, {
             type: 'normal',
             username: login,
             password
@@ -168,18 +168,18 @@ export class Client {
     }
 
     async getAllWikiPages() : Promise<Array<WikiPage>> {
-        const response = await this.instance.get<Array<WikiPage>>('/api/v1/wiki');
+        const response = await this.instance.get<Array<WikiPage>>('/wiki');
         return response.data;
     }
 
     async getWikiPage(id: number) : Promise<WikiPage> {
-        const response = await this.instance.get<WikiPage>(`/api/v1/wiki/${id}`);
+        const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
         return response.data;
     }
 
     async createWikiPage(id: number, slug: string, content: string, watchers: Array<number>) : Promise<boolean>{
         try {
-            await this.instance.post('/api/v1/wiki', {
+            await this.instance.post('/wiki', {
                 project: id,
                 slug,
                 content,
@@ -192,12 +192,47 @@ export class Client {
     }
 
     async getAllProjects() : Promise<Array<Project>> {
-        const response = await this.instance.get<Array<Project>>('/api/v1/projects');
+        const response = await this.instance.get<Array<Project>>('/projects');
         return response.data;
     }
 
     async getProject(id: number) : Promise<Project> {
-        const response = await this.instance.get<Project>(`/api/v1/projects/${id}`);
+        const response = await this.instance.get<Project>(`/projects/${id}`);
         return response.data;
+    }
+
+    async createProject(
+        creation_template: number,
+        description: string,
+        is_backlog_activated: boolean,
+        is_issues_activated: boolean,
+        is_kanban_activated: boolean,
+        is_private: boolean,
+        is_wiki_activated: boolean,
+        name: string,
+        total_milestones: number,
+        total_story_points: number,
+        videoconferences: string|null,
+        videoconferences_extra_data: string|null
+    ) : Promise<boolean>{
+        try {
+            await this.instance.post('/projects', {
+                creation_template,
+                description,
+                is_backlog_activated,
+                is_issues_activated,
+                is_kanban_activated,
+                is_private,
+                is_wiki_activated,
+                name,
+                total_milestones,
+                total_story_points,
+                videoconferences,
+                videoconferences_extra_data
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
     }
 }
