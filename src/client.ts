@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 
 interface ProjectExtraInfo {
     name: string
@@ -24,7 +24,7 @@ interface WikiPage {
     version: number
 }
 
-interface User {
+interface Person {
     username: string
     full_name_display: string
     photo: string|null
@@ -41,7 +41,7 @@ interface Project {
     description: string
     created_date: string
     modified_date: string
-    owner: User
+    owner: Person
     members: Array<number>
     total_milestones: number|null,
     total_story_points: number|null
@@ -94,32 +94,110 @@ interface Project {
     my_homepage: string
 }
 
-export class Client {
+interface User {
+    id: number
+    username: string
+    full_name: string
+    full_name_display: string
+    color: string
+    bio: string
+    lang: string
+    theme: string
+    timezone: string
+    is_active: true,
+    photo: string|null
+    big_photo: string|null
+    gravatar_id: string
+    roles: Array<string>
+    total_private_projects: number
+    total_public_projects: number
+    email: string
+    uuid: string
+    date_joined: string
+    read_new_terms: boolean
+    accepted_terms: boolean
+    max_private_projects: number|null,
+    max_public_projects: number|null,
+    max_memberships_private_projects: number|null,
+    max_memberships_public_projects: number|null,
+    verified_email: boolean
+    auth_token: string
+}
 
-    private url: string;
-
-    constructor(url: string) {
-        this.url = url;
+export class ClientFactory {
+    constructor() {
         return ;
     }
 
+    async createClient(url: string, login: string, password: string) : Promise<Client> {
+        const client = new Client(url);
+        await client.init(url, login, password);
+        return client;
+    }
+}
+
+export class Client {
+
+    private url: string;
+    private instance: AxiosInstance;
+
+    constructor(url: string) {
+        this.url = url;
+        this.instance = axios;
+        return ;
+    }
+
+    async init(url: string, login: string, password: string) : Promise<void> {
+        this.instance = axios.create({
+            baseURL: url,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Bearer ${(await this.login(login, password)).auth_token}`
+            }
+        });
+        return ;
+    }
+
+    async login(login: string, password: string) : Promise<User>{
+        const response = await axios.post<User>(`${this.url}/api/v1/auth`, {
+            type: 'normal',
+            username: login,
+            password
+        });
+        return response.data;
+    }
+
     async getAllWikiPages() : Promise<Array<WikiPage>> {
-        const response = await axios.get<Array<WikiPage>>(`${this.url}/api/v1/wiki`);
+        const response = await this.instance.get<Array<WikiPage>>('/api/v1/wiki');
         return response.data;
     }
 
     async getWikiPage(id: number) : Promise<WikiPage> {
-        const response = await axios.get<WikiPage>(`${this.url}/api/v1/wiki/${id}`);
+        const response = await this.instance.get<WikiPage>(`/api/v1/wiki/${id}`);
         return response.data;
     }
 
+    async createWikiPage(id: number, slug: string, content: string, watchers: Array<number>) : Promise<boolean>{
+        try {
+            await this.instance.post('/api/v1/wiki', {
+                project: id,
+                slug,
+                content,
+                watchers
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
     async getAllProjects() : Promise<Array<Project>> {
-        const response = await axios.get<Array<Project>>(`${this.url}/api/v1/projects`);
+        const response = await this.instance.get<Array<Project>>('/api/v1/projects');
         return response.data;
     }
 
     async getProject(id: number) : Promise<Project> {
-        const response = await axios.get<Project>(`${this.url}/api/v1/projects/${id}`);
+        const response = await this.instance.get<Project>(`/api/v1/projects/${id}`);
         return response.data;
     }
 }
