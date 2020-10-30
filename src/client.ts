@@ -129,22 +129,61 @@ export class ClientFactory {
         return ;
     }
 
-    async createClient(url: string, login: string, password: string) : Promise<Client> {
-        const client = new Client(url);
+    createBaseClient(url: string) : BaseClient {
+        const client = new BaseClient(url);
+        return client;
+    }
+
+    async createAuthClient(url: string, login: string, password: string) : Promise<AuthClient> {
+        const client = new AuthClient(url);
         await client.init(login, password);
         return client;
     }
 }
 
-export class Client {
+class BaseClient {
 
-    private url: string;
-    private instance: AxiosInstance;
+    protected url: string;
+    protected instance: AxiosInstance;
 
     constructor(url: string) {
         this.url = url + '/api/v1';
-        this.instance = axios;
-        return ;
+        this.instance = axios.create({
+            baseURL: this.url,
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            }
+        });
+    }
+
+    async getAllWikiPages() : Promise<Array<WikiPage>> {
+        const response = await this.instance.get<Array<WikiPage>>('/wiki');
+        return response.data;
+    }
+
+    async getWikiPage(id: number) : Promise<WikiPage> {
+        const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
+        return response.data;
+    }
+
+    async getAllProjects() : Promise<Array<Project>> {
+        const response = await this.instance.get<Array<Project>>('/projects');
+        return response.data;
+    }
+
+    async getProject(id: number) : Promise<Project> {
+        const response = await this.instance.get<Project>(`/projects/${id}`);
+        return response.data;
+    }
+
+}
+
+class AuthClient extends BaseClient {
+
+    private isLogin = false;
+
+    constructor(url: string) {
+        super(url);
     }
 
     async init(login: string, password: string) : Promise<void> {
@@ -158,26 +197,22 @@ export class Client {
         return ;
     }
 
-    async login(login: string, password: string) : Promise<User>{
-        const response = await axios.post<User>(`${this.url}/auth`, {
+    private async login(login: string, password: string) : Promise<User>{
+        const response = await this.instance.post<User>('/auth', {
             type: 'normal',
             username: login,
             password
         });
-        return response.data;
-    }
-
-    async getAllWikiPages() : Promise<Array<WikiPage>> {
-        const response = await this.instance.get<Array<WikiPage>>('/wiki');
-        return response.data;
-    }
-
-    async getWikiPage(id: number) : Promise<WikiPage> {
-        const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
+        this.isLogin = true;
         return response.data;
     }
 
     async createWikiPage(id: number, slug: string, content: string, watchers: Array<number>) : Promise<boolean>{
+        if (!this.isLogin) {
+            new Error('Error: Try to create wiki page without do not login.');
+            return false;
+        }
+
         try {
             await this.instance.post('/wiki', {
                 project: id,
@@ -189,16 +224,6 @@ export class Client {
         } catch (error) {
             return false;
         }
-    }
-
-    async getAllProjects() : Promise<Array<Project>> {
-        const response = await this.instance.get<Array<Project>>('/projects');
-        return response.data;
-    }
-
-    async getProject(id: number) : Promise<Project> {
-        const response = await this.instance.get<Project>(`/projects/${id}`);
-        return response.data;
     }
 
     async createProject(
@@ -215,6 +240,10 @@ export class Client {
         videoconferences: string|null,
         videoconferences_extra_data: string|null
     ) : Promise<boolean>{
+        if (!this.isLogin) {
+            new Error('Error: Try to create project without do not login.');
+            return false;
+        }
         try {
             await this.instance.post('/projects', {
                 creation_template,
