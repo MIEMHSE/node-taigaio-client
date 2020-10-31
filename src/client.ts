@@ -128,13 +128,19 @@ export class ClientFactory {
     constructor() {
         return ;
     }
-
-    createBaseClient(url: string) : BaseClient {
-        const client = new BaseClient(url);
-        return client;
+    static createBaseClient(url = 'localhost') : BaseClient {
+        if (process.env.TAIGA_URL) {
+            return new BaseClient(process.env.TAIGA_URL);
+        }
+        return new BaseClient(url);
     }
 
-    async createAuthClient(url: string, login: string, password: string) : Promise<AuthClient> {
+    static async createAuthClient(url = 'localhost', login = '', password = '') : Promise<AuthClient> {
+        if (process.env.TAIGA_URL && process.env.TAIGA_LOGIN && process.env.TAIGA_PASSWORD) {
+            const client = new AuthClient(process.env.TAIGA_URL);
+            await client.init(process.env.TAIGA_LOGIN, process.env.TAIGA_PASSWORD);
+            return client;
+        }
         const client = new AuthClient(url);
         await client.init(login, password);
         return client;
@@ -156,21 +162,39 @@ class BaseClient {
         });
     }
 
+    /**
+     * Get all wiki pages
+     * @returns Array of WikiPages
+     */
     async getAllWikiPages() : Promise<Array<WikiPage>> {
         const response = await this.instance.get<Array<WikiPage>>('/wiki');
         return response.data;
     }
 
+    /**
+     * Get a wiki page by id.
+     * @param id - wikipage id
+     * @returns WikiPage
+     */
     async getWikiPage(id: number) : Promise<WikiPage> {
         const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
         return response.data;
     }
 
+    /**
+     * Get all projects.
+     * @returns Array of Projects
+     */
     async getAllProjects() : Promise<Array<Project>> {
         const response = await this.instance.get<Array<Project>>('/projects');
         return response.data;
     }
 
+    /**
+     * Get a project by id.
+     * @param id - project id
+     * @returns Project
+     */
     async getProject(id: number) : Promise<Project> {
         const response = await this.instance.get<Project>(`/projects/${id}`);
         return response.data;
@@ -182,10 +206,19 @@ class AuthClient extends BaseClient {
 
     private isLogin = false;
 
+    /**
+     * Class initialize: authorization
+     * @param url - your organization's taiga site
+     */
     constructor(url: string) {
         super(url);
     }
 
+    /**
+     * Class initialize: authorization
+     * @param login in taiga
+     * @param password in taiga
+     */
     async init(login: string, password: string) : Promise<void> {
         this.instance = axios.create({
             baseURL: this.url,
@@ -197,6 +230,12 @@ class AuthClient extends BaseClient {
         return ;
     }
 
+    /**
+     * Authorization in taiga
+     * @param login in taiga
+     * @param password in taiga
+     * @returns User
+     */
     private async login(login: string, password: string) : Promise<User>{
         const response = await this.instance.post<User>('/auth', {
             type: 'normal',
@@ -207,6 +246,14 @@ class AuthClient extends BaseClient {
         return response.data;
     }
 
+    /**
+     * Create a wiki page by id
+     * @param id - project id
+     * @param slug - short page name
+     * @param content - page written in text/html/markdown format
+     * @param watchers - array of watchers id
+     * @returns is this page created
+     */
     async createWikiPage(id: number, slug: string, content: string, watchers: Array<number>) : Promise<boolean>{
         if (!this.isLogin) {
             new Error('Error: Try to create wiki page without do not login.');
@@ -226,6 +273,13 @@ class AuthClient extends BaseClient {
         }
     }
 
+    /**
+     * Create a project by id
+     * @param creation_template - base template for the project
+     * @param videoconferences - "whereby-com", "jitsi", "talky" or "custom", the third party used for meetups if enabled
+     * @param videoconferences_extra_data - tring used for the videoconference chat url generation
+     * @returns is this project created
+     */
     async createProject(
         creation_template: number,
         description: string,
