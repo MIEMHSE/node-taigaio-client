@@ -1,13 +1,13 @@
 import axios, { AxiosInstance } from 'axios';
 
-interface ProjectExtraInfo {
+export interface ProjectExtraInfo {
     name: string
     slug: string
-    logo_small_url: string|null
+    logo_small_url?: string
     id: number
 }
 
-interface WikiPage {
+export interface WikiPage {
     project: number
     project_extra_info: ProjectExtraInfo
     is_watcher: boolean
@@ -24,17 +24,17 @@ interface WikiPage {
     version: number
 }
 
-interface Person {
+export interface Person {
     username: string
     full_name_display: string
-    photo: string|null
-    big_photo: string|null
+    photo?: string
+    big_photo?: string
     gravatar_id: string
-    is_active: boolean,
+    is_active: boolean
     id: number
 }
 
-interface Project {
+export interface Project {
     id: number
     name: string
     slug: string
@@ -43,16 +43,16 @@ interface Project {
     modified_date: string
     owner: Person
     members: Array<number>
-    total_milestones: number|null,
-    total_story_points: number|null
+    total_milestones?: number
+    total_story_points?: number
     is_contact_activated: boolean
     is_epics_activated: boolean
     is_backlog_activated: boolean
     is_kanban_activated: boolean
     is_wiki_activated: boolean
     is_issues_activated: boolean
-    videoconferences: string|null
-    videoconferences_extra_data: string|null
+    videoconferences?: string
+    videoconferences_extra_data?: string
     creation_template: number
     is_private: boolean
     anon_permissions: Array<string>
@@ -60,7 +60,7 @@ interface Project {
     is_featured: boolean
     is_looking_for_people: boolean
     looking_for_people_note: string
-    blocked_code: number|null
+    blocked_code?: number
     totals_updated_datetime: string
     total_fans: number
     total_fans_last_week: number
@@ -84,17 +84,17 @@ interface Project {
     i_am_owner: boolean
     i_am_admin: boolean
     i_am_member: boolean
-    notify_level: number|null
+    notify_level?: number
     total_closed_milestones: number
     is_watcher: boolean
     total_watchers: number
-    logo_small_url: string|null
-    logo_big_url: string|null
+    logo_small_url?: string
+    logo_big_url?: string
     is_fan: boolean
     my_homepage: string
 }
 
-interface User {
+export interface User {
     id: number
     username: string
     full_name: string
@@ -104,9 +104,9 @@ interface User {
     lang: string
     theme: string
     timezone: string
-    is_active: true,
-    photo: string|null
-    big_photo: string|null
+    is_active: true
+    photo?: string
+    big_photo?: string
     gravatar_id: string
     roles: Array<string>
     total_private_projects: number
@@ -116,12 +116,48 @@ interface User {
     date_joined: string
     read_new_terms: boolean
     accepted_terms: boolean
-    max_private_projects: number|null,
-    max_public_projects: number|null,
-    max_memberships_private_projects: number|null,
-    max_memberships_public_projects: number|null,
+    max_private_projects?: number
+    max_public_projects?: number
+    max_memberships_private_projects?: number
+    max_memberships_public_projects?: number
     verified_email: boolean
     auth_token: string
+}
+
+export interface CreateProjectOptions {
+    creation_template: number
+    description: string
+    is_backlog_activated: boolean
+    is_issues_activated: boolean
+    is_kanban_activated: boolean
+    is_private: boolean
+    is_wiki_activated: boolean
+    name: string
+    total_milestones: number
+    total_story_points: number
+    videoconferences?: string
+    videoconferences_extra_data?: string
+}
+
+export interface ProjectsFilter {
+    member?: number
+    members?: Array<number>
+    is_looking_for_people?: boolean
+    is_featured?: boolean
+    is_backlog_activated?: boolean
+    is_kanban_activated?: boolean
+}
+
+export enum ProjectsOrderBy {
+    MEMBERSHIPS__USER_ORDER = 'memberships__user_order',
+    TOTAL_FANS = 'total_fans',
+    TOTAL_FANS_LAST_WEEK = 'total_fans_last_week',
+    TOTAL_FANS_LAST_MONTH = 'total_fans_last_month',
+    TOTAL_FANS_LAST_YEAR = 'total_fans_last_year',
+    TOTAL_ACTIVITY = 'total_activity',
+    TOTAL_ACTIVITY_LAST_WEEK = 'total_activity_last_week',
+    TOTAL_ACTIVITY_LAST_MONTH = 'total_activity_last_month',
+    TOTAL_ACTIVITY_LAST_YEAR = 'total_activity_last_year'
 }
 
 export class ClientFactory {
@@ -183,10 +219,17 @@ class BaseClient {
 
     /**
      * Get all projects.
+     * @param filter
+     * @param orderBy
      * @returns Array of Projects
      */
-    async getAllProjects() : Promise<Array<Project>> {
-        const response = await this.instance.get<Array<Project>>('/projects');
+    async getAllProjects(filter?: ProjectsFilter, orderBy?: ProjectsOrderBy) : Promise<Array<Project>> {
+        const response = await this.instance.get<Array<Project>>('/projects', {
+            params: {
+                ...filter,
+                orderBy
+            }
+        });
         return response.data;
     }
 
@@ -200,6 +243,19 @@ class BaseClient {
         return response.data;
     }
 
+    /**
+     * Get a project by slug.
+     * @param slug - project slug
+     * @returns Project
+     */
+    async getProjectBySlug(slug: string) : Promise<Project> {
+        const response = await this.instance.get<Project>('/projects/by_slug', {
+            params: {
+                slug
+            }
+        });
+        return response.data;
+    }
 }
 
 class AuthClient extends BaseClient {
@@ -275,47 +331,20 @@ class AuthClient extends BaseClient {
 
     /**
      * Create a project by id
-     * @param creation_template - base template for the project
-     * @param videoconferences - "whereby-com", "jitsi", "talky" or "custom", the third party used for meetups if enabled
-     * @param videoconferences_extra_data - tring used for the videoconference chat url generation
      * @returns is this project created
      */
-    async createProject(
-        creation_template: number,
-        description: string,
-        is_backlog_activated: boolean,
-        is_issues_activated: boolean,
-        is_kanban_activated: boolean,
-        is_private: boolean,
-        is_wiki_activated: boolean,
-        name: string,
-        total_milestones: number,
-        total_story_points: number,
-        videoconferences: string|null,
-        videoconferences_extra_data: string|null
-    ) : Promise<boolean>{
+    async createProject(options: CreateProjectOptions) : Promise<boolean>{
         if (!this.isLogin) {
             new Error('Error: Try to create project without do not login.');
             return false;
         }
         try {
-            await this.instance.post('/projects', {
-                creation_template,
-                description,
-                is_backlog_activated,
-                is_issues_activated,
-                is_kanban_activated,
-                is_private,
-                is_wiki_activated,
-                name,
-                total_milestones,
-                total_story_points,
-                videoconferences,
-                videoconferences_extra_data
-            });
+            await this.instance.post('/projects', options);
             return true;
         } catch (error) {
             return false;
         }
     }
 }
+
+export type { BaseClient, AuthClient };
