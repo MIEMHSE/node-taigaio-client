@@ -160,30 +160,30 @@ export enum ProjectsOrderBy {
     TOTAL_ACTIVITY_LAST_YEAR = 'total_activity_last_year'
 }
 
-export class ClientFactory {
+export class TaigaClientFactory {
     constructor() {
         return ;
     }
-    static createBaseClient(url = 'localhost') : BaseClient {
+    static createBaseClient(url = 'localhost') : TaigaBaseClient {
         if (process.env.TAIGA_URL) {
-            return new BaseClient(process.env.TAIGA_URL);
+            return new TaigaBaseClient(process.env.TAIGA_URL);
         }
-        return new BaseClient(url);
+        return new TaigaBaseClient(url);
     }
 
-    static async createAuthClient(url = 'localhost', login = '', password = '') : Promise<AuthClient> {
+    static async createAuthClient(url = 'localhost', login = '', password = '') : Promise<TaigaAuthClient> {
         if (process.env.TAIGA_URL && process.env.TAIGA_LOGIN && process.env.TAIGA_PASSWORD) {
-            const client = new AuthClient(process.env.TAIGA_URL);
+            const client = new TaigaAuthClient(process.env.TAIGA_URL);
             await client.init(process.env.TAIGA_LOGIN, process.env.TAIGA_PASSWORD);
             return client;
         }
-        const client = new AuthClient(url);
+        const client = new TaigaAuthClient(url);
         await client.init(login, password);
         return client;
     }
 }
 
-class BaseClient {
+class TaigaBaseClient {
 
     protected url: string;
     protected instance: AxiosInstance;
@@ -258,7 +258,7 @@ class BaseClient {
     }
 }
 
-class AuthClient extends BaseClient {
+class TaigaAuthClient extends TaigaBaseClient {
 
     private isLogin = false;
 
@@ -347,4 +347,4 @@ class AuthClient extends BaseClient {
     }
 }
 
-export type { BaseClient, AuthClient };
+export type { TaigaBaseClient, TaigaAuthClient };

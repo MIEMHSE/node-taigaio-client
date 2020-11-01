@@ -1,4 +1,4 @@
-export { ClientFactory } from './client';
+export { TaigaClientFactory } from './client';
 export {
     ProjectExtraInfo,
     WikiPage,
@@ -8,4 +8,4 @@ export {
     CreateProjectOptions,
     ProjectsFilter,
     ProjectsOrderBy } from './client';
-export type { BaseClient, AuthClient } from './client';
+export type { TaigaBaseClient, TaigaAuthClient } from './client';
