@@ -24,6 +24,14 @@ export interface WikiPage {
     version: number
 }
 
+export interface WikiLink {
+    href: string
+    id: number
+    order: number
+    project: number
+    title: string
+}
+
 export interface Person {
     username: string
     full_name_display: string
@@ -229,6 +237,41 @@ class TaigaBaseClient {
     async getWikiPage(id: number) : Promise<WikiPage|undefined> {
         try {
             const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            return undefined;
+        }
+    }
+
+
+    /**
+     * Get all wiki links
+     * @param project - project id filtered
+     * @returns Array of WikiLinks
+     */
+    async getAllWikiLinks(project?: number) : Promise<Array<WikiLink>|undefined> {
+        try {
+            const response = await this.instance.get<Array<WikiLink>>('/wiki-links', {
+                params: {
+                    project
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            return undefined;
+        }
+    }
+
+    /**
+     * Get a wiki link by id.
+     * @param id - wiki link id
+     * @returns WikiLink
+     */
+    async getWikiLink(id: number) : Promise<WikiLink|undefined> {
+        try {
+            const response = await this.instance.get<WikiLink>(`/wiki-links/${id}`);
             return response.data;
         } catch (error) {
             console.log(error);
