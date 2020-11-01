@@ -200,10 +200,15 @@ class TaigaBaseClient {
 
     /**
      * Get all wiki pages
+     * @param project - project id filtered
      * @returns Array of WikiPages
      */
-    async getAllWikiPages() : Promise<Array<WikiPage>> {
-        const response = await this.instance.get<Array<WikiPage>>('/wiki');
+    async getAllWikiPages(project?: number) : Promise<Array<WikiPage>> {
+        const response = await this.instance.get<Array<WikiPage>>('/wiki', {
+            params: {
+                project
+            }
+        });
         return response.data;
     }
 

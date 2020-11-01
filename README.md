@@ -11,10 +11,7 @@ You can use POST functions only with authentication
 
 ## Examples
 
-1. Create Base Client and get information about all projects and filter by is_backlog_activated: true
-and order by total_fans
-
-test.ts:
+- Create Base Client and get information about all projects and filter by is_backlog_activated: true and order by total_fans
 ```typescript
 import { TaigaClientFactory } from './index';
 import { ProjectsOrderBy } from './index';
@@ -32,20 +29,19 @@ import { ProjectsOrderBy } from './index';
 });
 ```
 
-2. Create Auth Client and create a new project, authentication with dotenv
+- Create Auth Client and create a new project, authentication with dotenv
 
-local.env:
+.env:
 ```text
 TAIGA_URL=url
 TAIGA_LOGIN=login
 TAIGA_PASSWORD=password
 ```
 
-test.ts:
 ```typescript
 import { resolve } from 'path';
 import { config } from 'dotenv';
-config({ path: resolve(__dirname, '../local.env') });
+config({ path: resolve(__dirname, '../.env') });
 
 import { TaigaClientFactory } from './index';
 
@@ -55,7 +51,7 @@ import { TaigaClientFactory } from './index';
 
     console.log((await client.createProject({
         creation_template: 1,
-        description: 'The best project in the MIEM',
+        description: 'The best project',
         is_backlog_activated: true,
         is_issues_activated: true,
         is_kanban_activated: true,
@@ -68,8 +64,6 @@ import { TaigaClientFactory } from './index';
 })().catch((err: unknown) => {
     console.log(err);
 });
-
-
 ```
 
 
