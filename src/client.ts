@@ -171,15 +171,19 @@ export class TaigaClientFactory {
         return new TaigaBaseClient(url);
     }
 
-    static async createAuthClient(url = 'localhost', login = '', password = '') : Promise<TaigaAuthClient> {
+    static async createAuthClient(url = 'localhost', login = '', password = '') : Promise<TaigaAuthClient|undefined> {
         if (process.env.TAIGA_URL && process.env.TAIGA_LOGIN && process.env.TAIGA_PASSWORD) {
             const client = new TaigaAuthClient(process.env.TAIGA_URL);
-            await client.init(process.env.TAIGA_LOGIN, process.env.TAIGA_PASSWORD);
-            return client;
+            if (await client.init(process.env.TAIGA_LOGIN, process.env.TAIGA_PASSWORD)){
+                return client;
+            }
+            return undefined;
         }
         const client = new TaigaAuthClient(url);
-        await client.init(login, password);
-        return client;
+        if (await client.init(login, password)){
+            return client;
+        }
+        return undefined;
     }
 }
 
@@ -203,13 +207,18 @@ class TaigaBaseClient {
      * @param project - project id filtered
      * @returns Array of WikiPages
      */
-    async getAllWikiPages(project?: number) : Promise<Array<WikiPage>> {
-        const response = await this.instance.get<Array<WikiPage>>('/wiki', {
-            params: {
-                project
-            }
-        });
-        return response.data;
+    async getAllWikiPages(project?: number) : Promise<Array<WikiPage>|undefined> {
+        try {
+            const response = await this.instance.get<Array<WikiPage>>('/wiki', {
+                params: {
+                    project
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            return undefined;
+        }
     }
 
     /**
@@ -217,9 +226,14 @@ class TaigaBaseClient {
      * @param id - wikipage id
      * @returns WikiPage
      */
-    async getWikiPage(id: number) : Promise<WikiPage> {
-        const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
-        return response.data;
+    async getWikiPage(id: number) : Promise<WikiPage|undefined> {
+        try {
+            const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            return undefined;
+        }
     }
 
     /**
@@ -228,14 +242,19 @@ class TaigaBaseClient {
      * @param orderBy
      * @returns Array of Projects
      */
-    async getAllProjects(filter?: ProjectsFilter, orderBy?: ProjectsOrderBy) : Promise<Array<Project>> {
-        const response = await this.instance.get<Array<Project>>('/projects', {
-            params: {
-                ...filter,
-                orderBy
-            }
-        });
-        return response.data;
+    async getAllProjects(filter?: ProjectsFilter, orderBy?: ProjectsOrderBy) : Promise<Array<Project>|undefined> {
+        try {
+            const response = await this.instance.get<Array<Project>>('/projects', {
+                params: {
+                    ...filter,
+                    orderBy
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            return undefined;
+        }
     }
 
     /**
@@ -243,9 +262,14 @@ class TaigaBaseClient {
      * @param id - project id
      * @returns Project
      */
-    async getProject(id: number) : Promise<Project> {
-        const response = await this.instance.get<Project>(`/projects/${id}`);
-        return response.data;
+    async getProject(id: number) : Promise<Project|undefined> {
+        try {
+            const response = await this.instance.get<Project>(`/projects/${id}`);
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            return undefined;
+        }
     }
 
     /**
@@ -253,13 +277,18 @@ class TaigaBaseClient {
      * @param slug - project slug
      * @returns Project
      */
-    async getProjectBySlug(slug: string) : Promise<Project> {
-        const response = await this.instance.get<Project>('/projects/by_slug', {
-            params: {
-                slug
-            }
-        });
-        return response.data;
+    async getProjectBySlug(slug: string) : Promise<Project|undefined> {
+        try {
+            const response = await this.instance.get<Project>('/projects/by_slug', {
+                params: {
+                    slug
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            return undefined;
+        }
     }
 }
 
@@ -280,15 +309,25 @@ class TaigaAuthClient extends TaigaBaseClient {
      * @param login in taiga
      * @param password in taiga
      */
-    async init(login: string, password: string) : Promise<void> {
-        this.instance = axios.create({
-            baseURL: this.url,
-            headers: {
-                'Content-Type': 'application/json;charset=utf-8',
-                'Authorization': `Bearer ${(await this.login(login, password)).auth_token}`
+    async init(login: string, password: string) : Promise<boolean> {
+        const loginData = await this.login(login, password);
+        if (loginData) {
+            const auth_token = loginData.auth_token;
+            try {
+                this.instance = axios.create({
+                    baseURL: this.url,
+                    headers: {
+                        'Content-Type': 'application/json;charset=utf-8',
+                        'Authorization': `Bearer ${auth_token}`
+                    }
+                });
+                return true;
+            } catch (error) {
+                console.log(error);
+                return false;
             }
-        });
-        return ;
+        }
+        return false;
     }
 
     /**
@@ -297,14 +336,19 @@ class TaigaAuthClient extends TaigaBaseClient {
      * @param password in taiga
      * @returns User
      */
-    private async login(login: string, password: string) : Promise<User>{
-        const response = await this.instance.post<User>('/auth', {
-            type: 'normal',
-            username: login,
-            password
-        });
-        this.isLogin = true;
-        return response.data;
+    private async login(login: string, password: string) : Promise<User|undefined>{
+        try {
+            const response = await this.instance.post<User>('/auth', {
+                type: 'normal',
+                username: login,
+                password
+            });
+            this.isLogin = true;
+            return response.data;
+        } catch (error) {
+            console.log(error);
+            return undefined;
+        }
     }
 
     /**
