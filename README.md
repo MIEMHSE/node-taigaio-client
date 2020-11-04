@@ -1,4 +1,8 @@
 # Taiga.io client
+<a href="https://gitmoji.carloscuesta.me">
+    <img src="https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat"
+         alt="Gitmoji">
+</a>
 
 ## Create client
 You should import _TaigaClientFactory_ and use _.createBaseClient_ or _.createAuthClient_

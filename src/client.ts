@@ -172,6 +172,12 @@ export class TaigaClientFactory {
     constructor() {
         return ;
     }
+
+    /**
+     * Create Base Client which can use only functions that do not require authentication
+     * @param url
+     * @returns BaseClient
+     */
     static createBaseClient(url = 'localhost') : TaigaBaseClient {
         if (process.env.TAIGA_URL) {
             return new TaigaBaseClient(process.env.TAIGA_URL);
@@ -179,6 +185,13 @@ export class TaigaClientFactory {
         return new TaigaBaseClient(url);
     }
 
+    /**
+     * Create Auth Client which can use all functions
+     * @param url
+     * @param login
+     * @param password
+     * @returns AuthClient or undefined if authentication failed or url does not exist
+     */
     static async createAuthClient(url = 'localhost', login = '', password = '') : Promise<TaigaAuthClient|undefined> {
         if (process.env.TAIGA_URL && process.env.TAIGA_LOGIN && process.env.TAIGA_PASSWORD) {
             const client = new TaigaAuthClient(process.env.TAIGA_URL);
@@ -213,7 +226,7 @@ class TaigaBaseClient {
     /**
      * Get all wiki pages
      * @param project - project id filtered
-     * @returns Array of WikiPages
+     * @returns Array of WikiPages or undefined if project does not exist
      */
     async getAllWikiPages(project?: number) : Promise<Array<WikiPage>|undefined> {
         try {
@@ -224,22 +237,20 @@ class TaigaBaseClient {
             });
             return response.data;
         } catch (error) {
-            console.log(error);
             return undefined;
         }
     }
 
     /**
      * Get a wiki page by id.
-     * @param id - wikipage id
-     * @returns WikiPage
+     * @param id - wiki page id
+     * @returns WikiPage or undefined if wiki page does not exist
      */
     async getWikiPage(id: number) : Promise<WikiPage|undefined> {
         try {
             const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
             return response.data;
         } catch (error) {
-            console.log(error);
             return undefined;
         }
     }
@@ -248,7 +259,7 @@ class TaigaBaseClient {
     /**
      * Get all wiki links
      * @param project - project id filtered
-     * @returns Array of WikiLinks
+     * @returns Array of WikiLinks or undefined if project does not exist
      */
     async getAllWikiLinks(project?: number) : Promise<Array<WikiLink>|undefined> {
         try {
@@ -259,7 +270,6 @@ class TaigaBaseClient {
             });
             return response.data;
         } catch (error) {
-            console.log(error);
             return undefined;
         }
     }
@@ -267,14 +277,13 @@ class TaigaBaseClient {
     /**
      * Get a wiki link by id.
      * @param id - wiki link id
-     * @returns WikiLink
+     * @returns WikiLink or undefined if wiki link does not exist
      */
     async getWikiLink(id: number) : Promise<WikiLink|undefined> {
         try {
             const response = await this.instance.get<WikiLink>(`/wiki-links/${id}`);
             return response.data;
         } catch (error) {
-            console.log(error);
             return undefined;
         }
     }
@@ -283,7 +292,7 @@ class TaigaBaseClient {
      * Get all projects.
      * @param filter
      * @param orderBy
-     * @returns Array of Projects
+     * @returns Array of Projects or undefined if projects do not exist
      */
     async getAllProjects(filter?: ProjectsFilter, orderBy?: ProjectsOrderBy) : Promise<Array<Project>|undefined> {
         try {
@@ -295,7 +304,6 @@ class TaigaBaseClient {
             });
             return response.data;
         } catch (error) {
-            console.log(error);
             return undefined;
         }
     }
@@ -303,14 +311,13 @@ class TaigaBaseClient {
     /**
      * Get a project by id.
      * @param id - project id
-     * @returns Project
+     * @returns Project or undefined if project does not exist
      */
     async getProject(id: number) : Promise<Project|undefined> {
         try {
             const response = await this.instance.get<Project>(`/projects/${id}`);
             return response.data;
         } catch (error) {
-            console.log(error);
             return undefined;
         }
     }
@@ -318,7 +325,7 @@ class TaigaBaseClient {
     /**
      * Get a project by slug.
      * @param slug - project slug
-     * @returns Project
+     * @returns Project or undefined if project does not exist
      */
     async getProjectBySlug(slug: string) : Promise<Project|undefined> {
         try {
@@ -329,7 +336,6 @@ class TaigaBaseClient {
             });
             return response.data;
         } catch (error) {
-            console.log(error);
             return undefined;
         }
     }
@@ -366,19 +372,12 @@ class TaigaAuthClient extends TaigaBaseClient {
                 });
                 return true;
             } catch (error) {
-                console.log(error);
                 return false;
             }
         }
         return false;
     }
 
-    /**
-     * Authorization in taiga
-     * @param login in taiga
-     * @param password in taiga
-     * @returns User
-     */
     private async login(login: string, password: string) : Promise<User|undefined>{
         try {
             const response = await this.instance.post<User>('/auth', {
@@ -389,7 +388,6 @@ class TaigaAuthClient extends TaigaBaseClient {
             this.isLogin = true;
             return response.data;
         } catch (error) {
-            console.log(error);
             return undefined;
         }
     }
