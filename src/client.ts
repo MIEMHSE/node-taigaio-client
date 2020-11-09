@@ -435,6 +435,47 @@ class TaigaAuthClient extends TaigaBaseClient {
             return false;
         }
     }
+
+    /**
+     * Edit project name or/and project description 
+     * @param id - project id
+     * @param name - new project name
+     * @param description - new project description
+     * @returns is this project changed
+     */
+    async editProject(id: number, name?: string, description?: string) : Promise<boolean>{
+        if (!this.isLogin) {
+            new Error('Error: Try to create project without do not login.');
+            return false;
+        }
+        try {
+            await this.instance.patch(`/projects/${id}`, {
+                name,
+                description
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    /**
+     * Delete project
+     * @param id - project id
+     * @returns is this project deleted
+     */
+    async deleteProject(id: number) : Promise<boolean>{
+        if (!this.isLogin) {
+            new Error('Error: Try to create project without do not login.');
+            return false;
+        }
+        try {
+            await this.instance.delete(`/projects/${id}`);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
 }
 
 export type { TaigaBaseClient, TaigaAuthClient };
