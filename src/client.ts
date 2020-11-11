@@ -32,7 +32,7 @@ export interface WikiLink {
     title: string
 }
 
-export interface Person {
+export interface Owner {
     username: string
     full_name_display: string
     photo?: string
@@ -49,7 +49,7 @@ export interface Project {
     description: string
     created_date: string
     modified_date: string
-    owner: Person
+    owner: Owner
     members: Array<number>
     total_milestones?: number
     total_story_points?: number
@@ -102,7 +102,26 @@ export interface Project {
     my_homepage: string
 }
 
-export interface User {
+export interface UserDetail extends UserContactDetail {
+    total_private_projects: number
+    total_public_projects: number
+    email: string
+    uuid: string
+    date_joined: string
+    read_new_terms: boolean
+    accepted_terms: boolean
+    max_private_projects?: number
+    max_public_projects?: number
+    max_memberships_private_projects?: number
+    max_memberships_public_projects?: number
+    verified_email: boolean
+}
+
+export interface UserAuthDetail extends UserDetail {
+    auth_token: string
+}
+
+export interface UserContactDetail {
     id: number
     username: string
     full_name: string
@@ -116,20 +135,14 @@ export interface User {
     photo?: string
     big_photo?: string
     gravatar_id: string
+    roles: Array<string>    
+}
+
+export interface UserStatsDetail {
     roles: Array<string>
-    total_private_projects: number
-    total_public_projects: number
-    email: string
-    uuid: string
-    date_joined: string
-    read_new_terms: boolean
-    accepted_terms: boolean
-    max_private_projects?: number
-    max_public_projects?: number
-    max_memberships_private_projects?: number
-    max_memberships_public_projects?: number
-    verified_email: boolean
-    auth_token: string
+    total_num_closed_userstories: number
+    total_num_contacts : number
+    total_num_projects: number
 }
 
 export interface CreateProjectOptions {
@@ -339,6 +352,37 @@ class TaigaBaseClient {
             return undefined;
         }
     }
+
+    async getAllUsersContactDetail(projectId?: number) : Promise<Array<UserContactDetail>|undefined>{
+        try {
+            const response = await this.instance.get<Array<UserContactDetail>>('/users', {
+                params: {
+                    project: projectId
+                }
+            });
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    async getUserContactDetail(userId?: number) : Promise<UserContactDetail|undefined>{
+        try {
+            const response = await this.instance.get<UserContactDetail>(`/users/${userId}`);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    async getUserStats(userId?: number) : Promise<UserStatsDetail|undefined>{
+        try {
+            const response = await this.instance.get<UserStatsDetail>(`/users/${userId}/stats`);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
 }
 
 class TaigaAuthClient extends TaigaBaseClient {
@@ -378,9 +422,9 @@ class TaigaAuthClient extends TaigaBaseClient {
         return false;
     }
 
-    private async login(login: string, password: string) : Promise<User|undefined>{
+    private async login(login: string, password: string) : Promise<UserAuthDetail|undefined>{
         try {
-            const response = await this.instance.post<User>('/auth', {
+            const response = await this.instance.post<UserAuthDetail>('/auth', {
                 type: 'normal',
                 username: login,
                 password
@@ -402,7 +446,6 @@ class TaigaAuthClient extends TaigaBaseClient {
      */
     async createWikiPage(id: number, slug: string, content: string, watchers: Array<number>) : Promise<boolean>{
         if (!this.isLogin) {
-            new Error('Error: Try to create wiki page without do not login.');
             return false;
         }
 
@@ -425,7 +468,6 @@ class TaigaAuthClient extends TaigaBaseClient {
      */
     async createProject(options: CreateProjectOptions) : Promise<boolean>{
         if (!this.isLogin) {
-            new Error('Error: Try to create project without do not login.');
             return false;
         }
         try {
@@ -445,7 +487,6 @@ class TaigaAuthClient extends TaigaBaseClient {
      */
     async editProject(id: number, name?: string, description?: string) : Promise<boolean>{
         if (!this.isLogin) {
-            new Error('Error: Try to create project without do not login.');
             return false;
         }
         try {
@@ -466,7 +507,6 @@ class TaigaAuthClient extends TaigaBaseClient {
      */
     async deleteProject(id: number) : Promise<boolean>{
         if (!this.isLogin) {
-            new Error('Error: Try to create project without do not login.');
             return false;
         }
         try {
@@ -474,6 +514,18 @@ class TaigaAuthClient extends TaigaBaseClient {
             return true;
         } catch (error) {
             return false;
+        }
+    }  
+    
+    async getMeContactDetail() : Promise<UserDetail|undefined>{
+        if (!this.isLogin) {
+            return undefined;
+        }
+        try {
+            const response = await this.instance.get<UserDetail>('/users/me');
+            return response.data;
+        } catch (error) {
+            return undefined;
         }
     }
 }

@@ -2,10 +2,15 @@ export { TaigaClientFactory } from './client';
 export {
     ProjectExtraInfo,
     WikiPage,
-    Person,
+    WikiLink,
+    Owner,
     Project,
-    User,
+    UserDetail,
+    UserAuthDetail,
+    UserContactDetail,
+    UserStatsDetail,
     CreateProjectOptions,
     ProjectsFilter,
-    ProjectsOrderBy } from './client';
+    ProjectsOrderBy 
+     } from './client';
 export type { TaigaBaseClient, TaigaAuthClient } from './client';
