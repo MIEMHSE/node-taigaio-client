@@ -9,6 +9,10 @@ import {
     UserAuthDetail,
     UserContactDetail,
     UserStatsDetail,
+    Task,
+    GetAllTasksFilter,
+    TaskCustomAttribute,
+    TaskCustomAttributeValue,
     WikiPage,
     WikiLink
 } from './';
@@ -165,6 +169,69 @@ class TaigaBaseClient {
             return undefined;
         }
     }
+
+    /**
+     * Get all tasks
+     * @param options - filter options
+     * @returns Array of Tasks or undefined if project does not exist
+     */
+    async getAllTasks(filter?: GetAllTasksFilter) : Promise<Array<Task>|undefined> {
+        try {
+            const response = await this.instance.get<Array<Task>>('/tasks', {
+                params: filter
+            });
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Get all task custom atributes
+     * @param project - project id
+     * @returns Array of TaskCustomAttribute or undefined if project does not exist
+     */
+    async getAllTaskCustomAttributes(project?: number) : Promise<Array<TaskCustomAttribute>|undefined> {
+        try {
+            const response = await this.instance.get<Array<TaskCustomAttribute>>('/task-custom-attributes', {
+                params: {
+                    project
+                }
+            });
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Get task custom atributes
+     * @param attribute - task attribute id
+     * @returns TaskCustomAttribute or undefined if task does not exist
+     */
+    async getTaskCustomAttributes(attribute: number) : Promise<TaskCustomAttribute|undefined> {
+        try {
+            const response = await this.instance.get<TaskCustomAttribute>(`/task-custom-attributes/${attribute}`);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+     /**
+     * Get task custom atribute value
+     * @param project - task id
+     * @returns TaskCustomAttributeValue or undefined if task does not exist
+     */
+    async getTaskCustomAttributeValue(task: number) : Promise<TaskCustomAttributeValue|undefined> {
+        try {
+            const response = await this.instance.get<TaskCustomAttributeValue>(`/tasks/custom-attributes-values/${task}`);
+            return response.data;
+        } catch (error) {    
+            return undefined;
+        }
+    }
+
 
     /**
      * Get all wiki pages
@@ -336,10 +403,10 @@ class TaigaAuthClient extends TaigaBaseClient {
         } catch (error) {
             return false;
         }
-    }  
+    }
     
     /**
-     * Delete project
+     * Get your contact detail
      * @param id - project id
      * @returns your contact detail data or undefined if there is no login
      */

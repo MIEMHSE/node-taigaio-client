@@ -1,13 +1,3 @@
-export interface Owner {
-    username: string
-    full_name_display: string
-    photo?: string
-    big_photo?: string
-    gravatar_id: string
-    is_active: boolean
-    id: number
-}
-
 export interface Project {
     id: number
     name: string
@@ -15,7 +5,7 @@ export interface Project {
     description: string
     created_date: string
     modified_date: string
-    owner: Owner
+    owner: UserExtraInfo
     members: Array<number>
     total_milestones?: number
     total_story_points?: number
@@ -68,11 +58,14 @@ export interface Project {
     my_homepage: string
 }
 
-export interface ProjectExtraInfo {
+export interface ProjectBriefInfo {
     name: string
     slug: string
-    logo_small_url?: string
     id: number
+}
+
+export interface ProjectExtraInfo extends ProjectBriefInfo{
+    logo_small_url?: string
 }
 
 export interface ProjectsFilter {
@@ -82,6 +75,18 @@ export interface ProjectsFilter {
     is_featured?: boolean
     is_backlog_activated?: boolean
     is_kanban_activated?: boolean
+}
+
+export enum ProjectsOrderBy {
+    MEMBERSHIPS__USER_ORDER = 'memberships__user_order',
+    TOTAL_FANS = 'total_fans',
+    TOTAL_FANS_LAST_WEEK = 'total_fans_last_week',
+    TOTAL_FANS_LAST_MONTH = 'total_fans_last_month',
+    TOTAL_FANS_LAST_YEAR = 'total_fans_last_year',
+    TOTAL_ACTIVITY = 'total_activity',
+    TOTAL_ACTIVITY_LAST_WEEK = 'total_activity_last_week',
+    TOTAL_ACTIVITY_LAST_MONTH = 'total_activity_last_month',
+    TOTAL_ACTIVITY_LAST_YEAR = 'total_activity_last_year'
 }
 
 export interface CreateProjectOptions {
@@ -97,18 +102,6 @@ export interface CreateProjectOptions {
     total_story_points: number
     videoconferences?: string
     videoconferences_extra_data?: string
-}
-
-export enum ProjectsOrderBy {
-    MEMBERSHIPS__USER_ORDER = 'memberships__user_order',
-    TOTAL_FANS = 'total_fans',
-    TOTAL_FANS_LAST_WEEK = 'total_fans_last_week',
-    TOTAL_FANS_LAST_MONTH = 'total_fans_last_month',
-    TOTAL_FANS_LAST_YEAR = 'total_fans_last_year',
-    TOTAL_ACTIVITY = 'total_activity',
-    TOTAL_ACTIVITY_LAST_WEEK = 'total_activity_last_week',
-    TOTAL_ACTIVITY_LAST_MONTH = 'total_activity_last_month',
-    TOTAL_ACTIVITY_LAST_YEAR = 'total_activity_last_year'
 }
 
 export interface UserDetail extends UserContactDetail {
@@ -154,6 +147,107 @@ export interface UserStatsDetail {
     total_num_projects: number
 }
 
+export interface UserExtraInfo {
+    username: string
+    full_name_display: string
+    photo?: string
+    big_photo?: string
+    gravatar_id: string
+    is_active: boolean
+    id: number
+}
+
+export interface Epic {
+    color: string
+    id: number
+    project: ProjectBriefInfo
+    ref: number
+    subject: string
+}
+
+export interface UserStoryExtraInfo {
+    epics: Array<Epic>
+    id: number
+    ref: number
+    subject: string
+}
+
+export interface Task {
+    assigned_to: number
+    assigned_to_extra_info: UserExtraInfo
+    attachments: Array<string>
+    blocked_note: string
+    created_date: string
+    due_date?: string
+    due_date_reason: string
+    due_date_status: string
+    external_reference: string
+    finished_date: string
+    id: number
+    is_blocked: boolean
+    is_closed: boolean
+    is_iocaine: boolean
+    is_voter: boolean
+    is_watcher: boolean
+    milestone: number
+    milestone_slug: string
+    modified_date: string
+    owner: number
+    owner_extra_info: UserExtraInfo
+    project: number
+    project_extra_info: ProjectExtraInfo
+    ref: number
+    status: number
+    status_extra_info: StatusExtraInfo
+    subject: string
+    tags: Array<Array<string>>
+    taskboard_order: number
+    total_comments: number
+    total_voters: number
+    total_watchers: number
+    us_order: number
+    user_story: number
+    user_story_extra_info: UserStoryExtraInfo
+    version: number
+    watchers: Array<number>
+}
+
+export interface GetAllTasksFilter {
+    project?: number
+    status?: number
+    tags?: Array<string>
+    user_story?: string
+    role?: string
+    owner?: number
+    milestone?: number
+    watchers?: number
+    assigned_to?: number
+    status__is_closed?: boolean
+    exclude_status?: number
+    exclude_tags?: Array<string>
+    exclude_role?:  number
+    exclude_owner?: number
+    exclude_assigned_to?: number
+}
+
+export interface TaskCustomAttribute {
+    created_date: string
+    description: string
+    extra?: string
+    id: number
+    modified_date: string
+    name: string
+    order: number
+    project: number
+    type: string
+}
+
+export interface TaskCustomAttributeValue {
+    attributes_values: { [key: string]: any; }
+    task: number
+    version: number
+}
+
 export interface WikiPage {
     project: number
     project_extra_info: ProjectExtraInfo
@@ -177,4 +271,10 @@ export interface WikiLink {
     order: number
     project: number
     title: string
+}
+
+export interface StatusExtraInfo {
+    color: string
+    is_closed: boolean
+    name: string
 }
