@@ -326,7 +326,8 @@ class TaigaAuthClient extends TaigaBaseClient {
                     baseURL: this.url,
                     headers: {
                         'Content-Type': 'application/json;charset=utf-8',
-                        'Authorization': `Bearer ${auth_token}`
+                        'Authorization': `Bearer ${auth_token}`,
+                        'x-disable-pagination': 'True'
                     }
                 });
                 return true;
