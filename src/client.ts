@@ -67,7 +67,8 @@ class TaigaBaseClient {
         this.instance = axios.create({
             baseURL: this.url,
             headers: {
-                'Content-Type': 'application/json;charset=utf-8'
+                'Content-Type': 'application/json;charset=utf-8',
+                'x-disable-pagination': 'True'
             }
         });
     }
