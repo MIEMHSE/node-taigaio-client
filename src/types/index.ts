@@ -1,3 +1,7 @@
+export * from './base';
+export * from './auth';
+export * from './applications';
+
 export interface Project {
     id: number
     name: string
@@ -119,9 +123,7 @@ export interface UserDetail extends UserContactDetail {
     verified_email: boolean
 }
 
-export interface UserAuthDetail extends UserDetail {
-    auth_token: string
-}
+
 
 export interface UserContactDetail {
     id: number
@@ -137,7 +139,7 @@ export interface UserContactDetail {
     photo?: string
     big_photo?: string
     gravatar_id: string
-    roles: Array<string>    
+    roles: Array<string>
 }
 
 export interface UserStatsDetail {

@@ -44,7 +44,7 @@ export class TaigaClientFactory {
     static async createAuthClient(url = 'localhost', login = '', password = '') : Promise<TaigaAuthClient|undefined> {
         if (process.env.TAIGA_URL && process.env.TAIGA_LOGIN && process.env.TAIGA_PASSWORD) {
             const client = new TaigaAuthClient(process.env.TAIGA_URL);
-            if (await client.init(process.env.TAIGA_LOGIN, process.env.TAIGA_PASSWORD)){
+            if (await client.init(process.env.TAIGA_LOGIN, process.env.TAIGA_PASSWORD)) {
                 return client;
             }
             return undefined;
@@ -228,7 +228,7 @@ class TaigaBaseClient {
         try {
             const response = await this.instance.get<TaskCustomAttributeValue>(`/tasks/custom-attributes-values/${task}`);
             return response.data;
-        } catch (error) {    
+        } catch (error) {
             return undefined;
         }
     }
@@ -297,7 +297,7 @@ class TaigaBaseClient {
         } catch (error) {
             return undefined;
         }
-    }   
+    }
 }
 
 class TaigaAuthClient extends TaigaBaseClient {
@@ -338,7 +338,7 @@ class TaigaAuthClient extends TaigaBaseClient {
         return false;
     }
 
-    private async login(login: string, password: string) : Promise<UserAuthDetail|undefined>{
+    private async _login(login: string, password: string) : Promise<UserAuthDetail|undefined> {
         try {
             const response = await this.instance.post<UserAuthDetail>('/auth', {
                 type: 'normal',
@@ -369,7 +369,7 @@ class TaigaAuthClient extends TaigaBaseClient {
     }
 
     /**
-     * Edit project name or/and project description 
+     * Edit project name or/and project description
      * @param id - project id
      * @param name - new project name
      * @param description - new project description
@@ -406,7 +406,7 @@ class TaigaAuthClient extends TaigaBaseClient {
             return false;
         }
     }
-    
+
     /**
      * Get your contact detail
      * @param id - project id
@@ -448,7 +448,7 @@ class TaigaAuthClient extends TaigaBaseClient {
         } catch (error) {
             return false;
         }
-    }   
+    }
 }
 
 export type { TaigaBaseClient, TaigaAuthClient };
