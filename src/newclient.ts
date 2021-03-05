@@ -1,3 +1,6 @@
+import { IProjectTemplateDetails } from './types/project-template';
+import { IUserStorage } from './types/user-storage';
+import { ISearchResults } from './types/search';
 import { IProjectResolve, IUserStoryResolve, IIssueResolve, ITaskResolve, IMilestoneResolve, IWikiPageResolve, IMultipleResolve } from './types/resolver';
 import { IAuthorizationCode, ICypheredToken } from './types/auth';
 import { IPrivateRegistryParams, IPublicRegistryParams, IUserAuthenticationDetail, IApplication, IApplicationToken } from './types';
@@ -80,6 +83,21 @@ export class TaigaClient {
     }
 
     /**
+     * Axios delete request with cheking
+     */
+    private async _deleteRequest(url: string, config?: AxiosRequestConfig) : Promise<boolean> {
+        if (!this._isLogin)
+            return false;
+
+        try {
+            await this._instance.delete(url, config);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    /**
      * Axios post request with cheking
      */
     private async _postRequest<T>(url: string, data?: unknown, config?: AxiosRequestConfig) : Promise<T | undefined> {
@@ -88,6 +106,36 @@ export class TaigaClient {
 
         try {
             const response = await this._instance.post<T>(url, data, config);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Axios patch request with cheking
+     */
+    private async _patchRequest<T>(url: string, data?: unknown, config?: AxiosRequestConfig) : Promise<T | undefined> {
+        if (!this._isLogin)
+            return undefined;
+
+        try {
+            const response = await this._instance.patch<T>(url, data, config);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Axios put request with cheking
+     */
+    private async _putRequest<T>(url: string, data?: unknown, config?: AxiosRequestConfig) : Promise<T | undefined> {
+        if (!this._isLogin)
+            return undefined;
+
+        try {
+            const response = await this._instance.put<T>(url, data, config);
             return response.data;
         } catch (error) {
             return undefined;
@@ -217,12 +265,7 @@ export class TaigaClient {
      * @returns is the application token was deleted
      */
     async deleteApplicationToken(tokenId: string) : Promise<boolean> {
-        try {
-            await this._instance.delete<IUserAuthenticationDetail>(`/application-tokens/${tokenId}`);
-            return true;
-        } catch (error) {
-            return false;
-        }
+        return await this._deleteRequest(`/application-tokens/${tokenId}`);
     }
 
     /**
@@ -259,7 +302,7 @@ export class TaigaClient {
      * To resolve the id of a project by the project slug
      */
     async resolveProject(projectSlug: string) : Promise<IProjectResolve | undefined> {
-        return await this._getRequest<IProjectResolve>('resolver', {
+        return await this._getRequest<IProjectResolve>('/resolver', {
             params: {
                 project: projectSlug
             }
@@ -270,7 +313,7 @@ export class TaigaClient {
      * To resolve the id of a user story by the project and user story slugs
      */
     async resolveUserStory(projectSlug: string, userStorySlug: string) : Promise<IUserStoryResolve | undefined> {
-        return await this._getRequest<IUserStoryResolve>('resolver', {
+        return await this._getRequest<IUserStoryResolve>('/resolver', {
             params: {
                 project: projectSlug,
                 us: userStorySlug
@@ -282,7 +325,7 @@ export class TaigaClient {
      * To resolve the id of a issue by the project and issue slugs
      */
     async resolveIssue(projectSlug: string, issueSlug: string) : Promise<IIssueResolve | undefined> {
-        return await this._getRequest<IIssueResolve>('resolver', {
+        return await this._getRequest<IIssueResolve>('/resolver', {
             params: {
                 issue: issueSlug,
                 project: projectSlug
@@ -294,7 +337,7 @@ export class TaigaClient {
      * To resolve the id of a task by the project and task slugs
      */
     async resolveTask(projectSlug: string, taskSlug: string) : Promise<ITaskResolve | undefined> {
-        return await this._getRequest<ITaskResolve>('resolver', {
+        return await this._getRequest<ITaskResolve>('/resolver', {
             params: {
                 task: taskSlug,
                 project: projectSlug
@@ -306,7 +349,7 @@ export class TaigaClient {
      * To resolve the id of a milestone by the project and milestone slugs
      */
     async resolveMilestone(projectSlug: string, milestoneSlug: string) : Promise<IMilestoneResolve | undefined> {
-        return await this._getRequest<IMilestoneResolve>('resolver', {
+        return await this._getRequest<IMilestoneResolve>('/resolver', {
             params: {
                 milestone: milestoneSlug,
                 project: projectSlug
@@ -318,7 +361,7 @@ export class TaigaClient {
      * To resolve the id of a wiki page by the project and wiki page slugs
      */
     async resolveWikiPage(projectSlug: string, wikiPageSlug: string) : Promise<IWikiPageResolve | undefined> {
-        return await this._getRequest<IWikiPageResolve>('resolver', {
+        return await this._getRequest<IWikiPageResolve>('/resolver', {
             params: {
                 project: projectSlug,
                 wikipage: wikiPageSlug
@@ -330,7 +373,7 @@ export class TaigaClient {
      * To resolve the multiple ids by project, task, user story and wiki page slugs
      */
     async resolveMultipleResolution(projectSlug: string, taskSlug: string, userStorySlug: string, wikiPageSlug: string) : Promise<IMultipleResolve | undefined> {
-        return await this._getRequest<IMultipleResolve>('resolver', {
+        return await this._getRequest<IMultipleResolve>('/resolver', {
             params: {
                 project: projectSlug,
                 task: taskSlug,
@@ -344,7 +387,7 @@ export class TaigaClient {
      * To resolve an object if we don’t know its type we have to use ref
      */
     async resolveByRefValue(projectSlug: string, ref: string) : Promise<IUserStoryResolve | ITaskResolve | IIssueResolve | undefined> {
-        return await this._getRequest<IUserStoryResolve | ITaskResolve | IIssueResolve>('resolver', {
+        return await this._getRequest<IUserStoryResolve | ITaskResolve | IIssueResolve>('/resolver', {
             params: {
                 project: projectSlug,
                 ref
@@ -354,5 +397,106 @@ export class TaigaClient {
 
     // //////////////////////////////////////////////////////////////////////////////
     // SEARCHES
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To search the text in the project
+     * @param project project id
+     * @param text text for find
+     */
+    async search(project: number, text: string) : Promise<ISearchResults | undefined> {
+        return await this._getRequest<ISearchResults>('/search', {
+            params: {
+                project,
+                text
+            }
+        });
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // USER STORAGE
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get a list of all user storages
+     */
+    async getUserStorageList() : Promise<IUserStorage | undefined> {
+        return await this._getRequest<IUserStorage>('/user-storage');
+    }
+
+    /**
+     * To create a user storage by key and value
+     */
+    async createUserStorage(key: string, value: string) : Promise<IUserStorage | undefined> {
+        return await this._postRequest<IUserStorage>('user-storage', {
+            key,
+            value
+        });
+    }
+
+    /**
+     * To get user storage by key
+     */
+    async getUserStorage(key: string) : Promise<IUserStorage | undefined> {
+        return await this._getRequest<IUserStorage>(`/user-storage/${key}`);
+    }
+
+    /**
+     * To edit the user storage by key
+     */
+    async editUserStorage(key: string, value: string) : Promise<IUserStorage | undefined> {
+        return await this._patchRequest<IUserStorage>(`/user-storage/${key}`, {
+            value
+        });
+    }
+
+    /**
+     * To delete user storage by id
+     */
+    async deleteUserStorage(key: string) : Promise<boolean> {
+        return await this._deleteRequest(`/user-storage/${key}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // PROJECT TEMPLATES
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of all project templates
+     */
+    async getProjectTemplateList() : Promise<IProjectTemplateDetails | undefined> {
+        return await this._getRequest<IProjectTemplateDetails>('/project-templates');
+    }
+
+    /**
+     * To create a new project template
+     */
+    async createProjectTemplate(data: IProjectTemplateDetails) : Promise<IProjectTemplateDetails | undefined> {
+        return await this._postRequest<IProjectTemplateDetails>('/project-templates', data);
+    }
+
+    /**
+     * To get the project template by the id
+     */
+    async getProjectTemplate(id: number) : Promise<IProjectTemplateDetails | undefined> {
+        return await this._getRequest<IProjectTemplateDetails>(`/project-templates/${id}`);
+    }
+
+    /**
+     * To edit the project template
+     */
+    async editProjectTemplate(data: IProjectTemplateDetails) : Promise<IProjectTemplateDetails | undefined> {
+        return await this._putRequest<IProjectTemplateDetails>(`/project-templates/${data.id}`, data);
+    }
+
+    /**
+     * To delete the project template by id
+     */
+    async deleteProjectTemplate(id: number) : Promise<boolean> {
+        return await this._deleteRequest(`/project-templates/${id}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // PROJECTS
     // //////////////////////////////////////////////////////////////////////////////
 }
