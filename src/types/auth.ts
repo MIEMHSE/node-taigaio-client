@@ -41,3 +41,13 @@ export interface IPrivateRegistryParams extends IPublicRegistryParams {
      */
     existing: boolean
 }
+
+export interface IAuthorizationCode {
+    auth_code: string
+    next_url: string
+    state: string
+}
+
+export interface ICypheredToken {
+    token: string
+}

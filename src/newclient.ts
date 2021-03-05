@@ -1,8 +1,12 @@
+import { IProjectResolve, IUserStoryResolve, IIssueResolve, ITaskResolve, IMilestoneResolve, IWikiPageResolve, IMultipleResolve } from './types/resolver';
+import { IAuthorizationCode, ICypheredToken } from './types/auth';
 import { IPrivateRegistryParams, IPublicRegistryParams, IUserAuthenticationDetail, IApplication, IApplicationToken } from './types';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 export class TaigaClient {
     private _url: string;
+    private _isDisablePagination = true;
+    private _languageId = 'en';
     private _instance: AxiosInstance;
     private _isLogin = false;
 
@@ -12,16 +16,82 @@ export class TaigaClient {
      * @param isDisablePagination is disable pagination in all queries
      * @param languageId the LanguageId can be chosen from the value list of available languages.
      */
-    constructor(url = 'localhost', isDisablePagination = true, languageId = 'en') {
+    constructor(url = 'localhost:8000', isDisablePagination = true, languageId = 'en', authToken?: string) {
         this._url = url + '/api/v1';
+        this._isDisablePagination = isDisablePagination;
+        this._languageId = languageId;
+        if (authToken) {
+            this._instance = axios.create({
+                baseURL: this._url,
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8',
+                    'x-disable-pagination': `${isDisablePagination ? 'True' : 'False'}`,
+                    'Accept-Language': languageId,
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            this._isLogin = true;
+        } else {
+            this._instance = axios.create({
+                baseURL: this._url,
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8',
+                    'x-disable-pagination': `${isDisablePagination ? 'True' : 'False'}`,
+                    'Accept-Language': languageId
+                }
+            });
+        }
+    }
+
+    /**
+     * Rewrite axios instance
+     * @param authToken - new auth token
+     */
+    private _authorize(authToken: string) : void {
         this._instance = axios.create({
             baseURL: this._url,
             headers: {
                 'Content-Type': 'application/json;charset=utf-8',
-                'x-disable-pagination': `${isDisablePagination ? 'True' : 'False'}`,
-                'Accept-Language': languageId
+                'x-disable-pagination': `${this._isDisablePagination ? 'True' : 'False'}`,
+                'Accept-Language': this._languageId,
+                'Authorization': `Bearer ${authToken}`
             }
         });
+        this._isLogin = true;
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // Request templates
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Axios get request with cheking
+     */
+    private async _getRequest<T>(url: string, config?: AxiosRequestConfig) : Promise<T | undefined> {
+        if (!this._isLogin)
+            return undefined;
+
+        try {
+            const response = await this._instance.get<T>(url, config);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Axios post request with cheking
+     */
+    private async _postRequest<T>(url: string, data?: unknown, config?: AxiosRequestConfig) : Promise<T | undefined> {
+        if (!this._isLogin)
+            return undefined;
+
+        try {
+            const response = await this._instance.post<T>(url, data, config);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
     }
 
     // //////////////////////////////////////////////////////////////////////////////
@@ -39,7 +109,7 @@ export class TaigaClient {
                 username,
                 password
             });
-            this._isLogin = true;
+            this._authorize(response.data.auth_token);
             return response.data;
         } catch (error) {
             return undefined;
@@ -56,7 +126,7 @@ export class TaigaClient {
                 type: 'github',
                 code
             });
-            this._isLogin = true;
+            this._authorize(response.data.auth_token);
             return response.data;
         } catch (error) {
             return undefined;
@@ -109,38 +179,180 @@ export class TaigaClient {
     // //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * To get an application
+     * To get an application by the application id
      * @param id application id
      */
     async getApplication(id: string) : Promise<IApplication | undefined> {
-        if (!this._isLogin)
-            return undefined;
-
-        try {
-            const response = await this._instance.get<IApplication>(`/applications/${id}`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
+        return await this._getRequest<IApplication>(`/applications/${id}`);
     }
 
     /**
-     * To get an application token
+     * To get an application token by the application id
      * @param id application id
      */
-    async getApplicationToken(id: string) : Promise<IApplicationToken | undefined> {
-        if (!this._isLogin)
-            return undefined;
-
-        try {
-            const response = await this._instance.get<IApplicationToken>(`/applications/${id}/token`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
+    async getApplicationToken(applicationId: string) : Promise<IApplicationToken | undefined> {
+        return await this._getRequest<IApplicationToken>(`/applications/${applicationId}/token`);
     }
 
     // //////////////////////////////////////////////////////////////////////////////
     // APPLICATION TOKENS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of all application tokens
+     */
+    async getApplicationTokenList() : Promise<Array<IApplicationToken> | undefined> {
+        return await this._getRequest<Array<IApplicationToken>>('/application-tokens');
+    }
+
+    /**
+     * To get an application token by the token id
+     */
+    async getApplicationTokenById(tokenId: string) : Promise<IApplicationToken | undefined> {
+        return await this._getRequest<IApplicationToken>(`/application-tokens/${tokenId}`);
+    }
+
+    /**
+     * To delete an application token by the token id
+     * @returns is the application token was deleted
+     */
+    async deleteApplicationToken(tokenId: string) : Promise<boolean> {
+        try {
+            await this._instance.delete<IUserAuthenticationDetail>(`/application-tokens/${tokenId}`);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    /**
+     * To authorize the application
+     * @param application the application id for the requested token
+     * @param state an unguessable random string for protecting request
+     */
+    async authorizeApplication(application: string, state: string) : Promise<IAuthorizationCode | undefined> {
+        return await this._postRequest<IAuthorizationCode>('/application-tokens/authorize', {
+            application,
+            state
+        });
+    }
+
+    /**
+     * To validate an authorization code
+     * @param application the application id
+     * @param authCode the application code got afther authorize
+     * @param state an unguessable random string for protecting request
+     */
+    async validateApplication(application: string, authCode: string, state: string) : Promise<ICypheredToken | undefined> {
+        return await this._postRequest<ICypheredToken>('/application-tokens/authorize', {
+            application,
+            auth_code: authCode,
+            state
+        });
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // RESOLVER
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To resolve the id of a project by the project slug
+     */
+    async resolveProject(projectSlug: string) : Promise<IProjectResolve | undefined> {
+        return await this._getRequest<IProjectResolve>('resolver', {
+            params: {
+                project: projectSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve the id of a user story by the project and user story slugs
+     */
+    async resolveUserStory(projectSlug: string, userStorySlug: string) : Promise<IUserStoryResolve | undefined> {
+        return await this._getRequest<IUserStoryResolve>('resolver', {
+            params: {
+                project: projectSlug,
+                us: userStorySlug
+            }
+        });
+    }
+
+    /**
+     * To resolve the id of a issue by the project and issue slugs
+     */
+    async resolveIssue(projectSlug: string, issueSlug: string) : Promise<IIssueResolve | undefined> {
+        return await this._getRequest<IIssueResolve>('resolver', {
+            params: {
+                issue: issueSlug,
+                project: projectSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve the id of a task by the project and task slugs
+     */
+    async resolveTask(projectSlug: string, taskSlug: string) : Promise<ITaskResolve | undefined> {
+        return await this._getRequest<ITaskResolve>('resolver', {
+            params: {
+                task: taskSlug,
+                project: projectSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve the id of a milestone by the project and milestone slugs
+     */
+    async resolveMilestone(projectSlug: string, milestoneSlug: string) : Promise<IMilestoneResolve | undefined> {
+        return await this._getRequest<IMilestoneResolve>('resolver', {
+            params: {
+                milestone: milestoneSlug,
+                project: projectSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve the id of a wiki page by the project and wiki page slugs
+     */
+    async resolveWikiPage(projectSlug: string, wikiPageSlug: string) : Promise<IWikiPageResolve | undefined> {
+        return await this._getRequest<IWikiPageResolve>('resolver', {
+            params: {
+                project: projectSlug,
+                wikipage: wikiPageSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve the multiple ids by project, task, user story and wiki page slugs
+     */
+    async resolveMultipleResolution(projectSlug: string, taskSlug: string, userStorySlug: string, wikiPageSlug: string) : Promise<IMultipleResolve | undefined> {
+        return await this._getRequest<IMultipleResolve>('resolver', {
+            params: {
+                project: projectSlug,
+                task: taskSlug,
+                us: userStorySlug,
+                wikipage: wikiPageSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve an object if we don’t know its type we have to use ref
+     */
+    async resolveByRefValue(projectSlug: string, ref: string) : Promise<IUserStoryResolve | ITaskResolve | IIssueResolve | undefined> {
+        return await this._getRequest<IUserStoryResolve | ITaskResolve | IIssueResolve>('resolver', {
+            params: {
+                project: projectSlug,
+                ref
+            }
+        });
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // SEARCHES
     // //////////////////////////////////////////////////////////////////////////////
 }

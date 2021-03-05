@@ -1,6 +1,7 @@
 export * from './base';
 export * from './auth';
 export * from './applications';
+export * from './resolver';
 
 export interface Project {
     id: number
