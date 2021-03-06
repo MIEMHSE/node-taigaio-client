@@ -747,7 +747,11 @@ export class TaigaClient {
      */
     async getTaskCustomAtributeList(projectId?: number) : Promise<Array<ITaskCustomAtributeDetail> | undefined> {
         if (projectId) {
-            return await this._getRequest<Array<ITaskCustomAtributeDetail> >(`/task-custom-attributes/${projectId}`);
+            return await this._getRequest<Array<ITaskCustomAtributeDetail> >('/task-custom-attributes', {
+                params: {
+                    project: projectId
+                }
+            });
         }
         return await this._getRequest<Array<ITaskCustomAtributeDetail> >('/task-custom-attributes');
     }
@@ -812,11 +816,15 @@ export class TaigaClient {
     /**
      * To get list wiki pages
      */
-    async getWikiPageList(projectId?: number) : Promise<IWikiPageDetail | undefined> {
+    async getWikiPageList(projectId?: number) : Promise<Array<IWikiPageDetail> | undefined> {
         if (projectId) {
-            return await this._getRequest<IWikiPageDetail>(`/wiki/${projectId}`);
+            return await this._getRequest<Array<IWikiPageDetail>>('/wiki', {
+                params: {
+                    project: projectId
+                }
+            });
         }
-        return await this._getRequest<IWikiPageDetail>('/wiki');
+        return await this._getRequest<Array<IWikiPageDetail>>('/wiki');
     }
 
     /**
@@ -836,7 +844,11 @@ export class TaigaClient {
      */
     async getWikiLinkList(projectId?: number) : Promise<Array<IWikiLinkDetail> | undefined> {
         if (projectId) {
-            return await this._getRequest<Array<IWikiLinkDetail>>(`/wiki-links/${projectId}`);
+            return await this._getRequest<Array<IWikiLinkDetail>>('/wiki-links', {
+                params: {
+                    project: projectId
+                }
+            });
         }
         return await this._getRequest<Array<IWikiLinkDetail>>('/wiki-links');
     }
