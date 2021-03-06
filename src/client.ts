@@ -1,454 +1,851 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 
-import { 
-    Project,
-    ProjectsFilter,
-    CreateProjectOptions,
-    ProjectsOrderBy,
-    UserDetail,
-    UserAuthDetail,
-    UserContactDetail,
-    UserStatsDetail,
-    Task,
-    GetAllTasksFilter,
-    TaskCustomAttribute,
-    TaskCustomAttributeValue,
-    WikiPage,
-    WikiLink
-} from './';
+import {
+    IApplication,
+    IApplicationToken,
+    IAuthorizationCode,
+    IBulkUpdateOrderProject,
+    ICypheredToken,
+    IIssueResolve,
+    IMilestoneResolve,
+    IMultipleResolve,
+    IPrivateRegistryParams,
+    IProjectCreateParams,
+    IProjectDetail,
+    IProjectFilter,
+    IProjectIssueStatsDetail,
+    IProjectListEntry,
+    IProjectModulesConfiguration,
+    IProjectResolve,
+    IProjectStatsDetail,
+    IProjectTagColors,
+    IProjectTemplateDetails,
+    IProjectVoter,
+    IProjectWatcher,
+    IPublicRegistryParams,
+    ISearchResults,
+    ITaskCustomAtributeDetail,
+    ITaskDetail,
+    ITaskFiltersDataDetail,
+    ITaskResolve,
+    IUserAuthenticationDetail,
+    IUserDetail,
+    IUserStatsDetail,
+    IUserStorage,
+    IUserStoryResolve,
+    IWikiLinkDetail,
+    IWikiPageDetail,
+    IWikiPageResolve
+} from './types';
 
-export class TaigaClientFactory {
-    constructor() {
-        return ;
+export class TaigaClient {
+    private _url: string;
+    private _isDisablePagination = true;
+    private _languageId = 'en';
+    private _instance: AxiosInstance;
+    private _isLogin = false;
+
+    /**
+     * Create a TaigaClient
+     * @param url taiga sever url
+     * @param isDisablePagination is disable pagination in all queries
+     * @param languageId the LanguageId can be chosen from the value list of available languages.
+     */
+    constructor(url = 'localhost:8000', authToken?: string, isDisablePagination = true, languageId = 'en') {
+        this._url = url + '/api/v1';
+        this._isDisablePagination = isDisablePagination;
+        this._languageId = languageId;
+        if (authToken) {
+            this._instance = axios.create({
+                baseURL: this._url,
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8',
+                    'x-disable-pagination': `${isDisablePagination ? 'True' : 'False'}`,
+                    'Accept-Language': languageId,
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+            this._isLogin = true;
+        } else {
+            this._instance = axios.create({
+                baseURL: this._url,
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8',
+                    'x-disable-pagination': `${isDisablePagination ? 'True' : 'False'}`,
+                    'Accept-Language': languageId
+                }
+            });
+        }
     }
 
     /**
-     * Create Base Client which can use only functions that do not require authentication
-     * @param url
-     * @returns BaseClient
+     * Rewrite axios instance
+     * @param authToken - new auth token
      */
-    static createBaseClient(url = 'localhost') : TaigaBaseClient {
-        if (process.env.TAIGA_URL) {
-            return new TaigaBaseClient(process.env.TAIGA_URL);
-        }
-        return new TaigaBaseClient(url);
-    }
-
-    /**
-     * Create Auth Client which can use all functions
-     * @param url
-     * @param login
-     * @param password
-     * @returns AuthClient or undefined if authentication failed or url does not exist
-     */
-    static async createAuthClient(url = 'localhost', login = '', password = '') : Promise<TaigaAuthClient|undefined> {
-        if (process.env.TAIGA_URL && process.env.TAIGA_LOGIN && process.env.TAIGA_PASSWORD) {
-            const client = new TaigaAuthClient(process.env.TAIGA_URL);
-            if (await client.init(process.env.TAIGA_LOGIN, process.env.TAIGA_PASSWORD)) {
-                return client;
-            }
-            return undefined;
-        }
-        const client = new TaigaAuthClient(url);
-        if (await client.init(login, password)){
-            return client;
-        }
-        return undefined;
-    }
-}
-
-class TaigaBaseClient {
-
-    protected url: string;
-    protected instance: AxiosInstance;
-
-    constructor(url: string) {
-        this.url = url + '/api/v1';
-        this.instance = axios.create({
-            baseURL: this.url,
+    private _authorize(authToken: string) : void {
+        this._instance = axios.create({
+            baseURL: this._url,
             headers: {
                 'Content-Type': 'application/json;charset=utf-8',
-                'x-disable-pagination': 'True'
+                'x-disable-pagination': `${this._isDisablePagination ? 'True' : 'False'}`,
+                'Accept-Language': this._languageId,
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        this._isLogin = true;
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // Request templates
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Axios get request with cheking
+     */
+    private async _getRequest<T>(url: string, config?: AxiosRequestConfig) : Promise<T | undefined> {
+        if (!this._isLogin)
+            return undefined;
+
+        try {
+            const response = await this._instance.get<T>(url, config);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Axios delete request with cheking
+     */
+    private async _deleteRequest(url: string, config?: AxiosRequestConfig) : Promise<boolean> {
+        if (!this._isLogin)
+            return false;
+
+        try {
+            await this._instance.delete(url, config);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    /**
+     * Axios post request with cheking
+     */
+    private async _postRequest<T>(url: string, data?: unknown, config?: AxiosRequestConfig) : Promise<T | undefined> {
+        if (!this._isLogin)
+            return undefined;
+
+        try {
+            const response = await this._instance.post<T>(url, data, config);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Axios patch request with cheking
+     */
+    private async _patchRequest<T>(url: string, data?: unknown, config?: AxiosRequestConfig) : Promise<T | undefined> {
+        if (!this._isLogin)
+            return undefined;
+
+        try {
+            const response = await this._instance.patch<T>(url, data, config);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Axios put request with cheking
+     */
+    private async _putRequest<T>(url: string, data?: unknown, config?: AxiosRequestConfig) : Promise<T | undefined> {
+        if (!this._isLogin)
+            return undefined;
+
+        try {
+            const response = await this._instance.put<T>(url, data, config);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // AUTH
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To login a user
+     * @param username also supports the user email
+     */
+    async normalLogin(username: string, password: string) : Promise<IUserAuthenticationDetail | undefined> {
+        try {
+            const response = await this._instance.post<IUserAuthenticationDetail>('/auth', {
+                type: 'normal',
+                username,
+                password
+            });
+            this._authorize(response.data.auth_token);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * To login a user via GitHub
+     * @param code your github authentication code
+     */
+    async githubLogin(code: string) : Promise<IUserAuthenticationDetail | undefined> {
+        try {
+            const response = await this._instance.post<IUserAuthenticationDetail>('/auth', {
+                type: 'github',
+                code
+            });
+            this._authorize(response.data.auth_token);
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * To register a user without invitation
+     * @param params: IPublicRegistryParams
+     */
+    async publicRegistry(params: IPublicRegistryParams) : Promise<IUserAuthenticationDetail | undefined> {
+        try {
+            const response = await this._instance.post<IUserAuthenticationDetail>('/auth/register', {
+                type: 'public',
+                accepted_terms: params.accepted_terms,
+                email: params.email,
+                full_name: params.full_name,
+                password: params.password,
+                username: params.username
+            });
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    /**
+     * To add a user into a project via invitation
+     * @param params: IPrivateRegistryParams
+     */
+    async privateRegistry(params: IPrivateRegistryParams) : Promise<IUserAuthenticationDetail | undefined> {
+        try {
+            const response = await this._instance.post<IUserAuthenticationDetail>('/auth/register', {
+                'type': 'private',
+                'accepted_terms': params.accepted_terms,
+                'email': params.email,
+                'existing': params.existing,
+                'full_name': params.full_name,
+                'password': params.password,
+                'username': params.username
+            });
+            return response.data;
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // APPLICATIONS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get an application by the application id
+     * @param id application id
+     */
+    async getApplication(id: string) : Promise<IApplication | undefined> {
+        return await this._getRequest<IApplication>(`/applications/${id}`);
+    }
+
+    /**
+     * To get an application token by the application id
+     * @param id application id
+     */
+    async getApplicationToken(applicationId: string) : Promise<IApplicationToken | undefined> {
+        return await this._getRequest<IApplicationToken>(`/applications/${applicationId}/token`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // APPLICATION TOKENS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of all application tokens
+     */
+    async getApplicationTokenList() : Promise<Array<IApplicationToken> | undefined> {
+        return await this._getRequest<Array<IApplicationToken>>('/application-tokens');
+    }
+
+    /**
+     * To get an application token by the token id
+     */
+    async getApplicationTokenById(tokenId: string) : Promise<IApplicationToken | undefined> {
+        return await this._getRequest<IApplicationToken>(`/application-tokens/${tokenId}`);
+    }
+
+    /**
+     * To delete an application token by the token id
+     * @returns is the application token was deleted
+     */
+    async deleteApplicationToken(tokenId: string) : Promise<boolean> {
+        return await this._deleteRequest(`/application-tokens/${tokenId}`);
+    }
+
+    /**
+     * To authorize the application
+     * @param application the application id for the requested token
+     * @param state an unguessable random string for protecting request
+     */
+    async authorizeApplication(application: string, state: string) : Promise<IAuthorizationCode | undefined> {
+        return await this._postRequest<IAuthorizationCode>('/application-tokens/authorize', {
+            application,
+            state
+        });
+    }
+
+    /**
+     * To validate an authorization code
+     * @param application the application id
+     * @param authCode the application code got afther authorize
+     * @param state an unguessable random string for protecting request
+     */
+    async validateApplication(application: string, authCode: string, state: string) : Promise<ICypheredToken | undefined> {
+        return await this._postRequest<ICypheredToken>('/application-tokens/authorize', {
+            application,
+            auth_code: authCode,
+            state
+        });
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // RESOLVER
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To resolve the id of a project by the project slug
+     */
+    async resolveProject(projectSlug: string) : Promise<IProjectResolve | undefined> {
+        return await this._getRequest<IProjectResolve>('/resolver', {
+            params: {
+                project: projectSlug
             }
         });
     }
 
     /**
-     * Get all projects.
-     * @param filter
-     * @param orderBy
-     * @returns Array of Projects or undefined if projects do not exist
+     * To resolve the id of a user story by the project and user story slugs
      */
-    async getAllProjects(filter?: ProjectsFilter, orderBy?: ProjectsOrderBy) : Promise<Array<Project>|undefined> {
-        try {
-            const response = await this.instance.get<Array<Project>>('/projects', {
-                params: {
-                    ...filter,
-                    orderBy
-                }
-            });
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
+    async resolveUserStory(projectSlug: string, userStorySlug: string) : Promise<IUserStoryResolve | undefined> {
+        return await this._getRequest<IUserStoryResolve>('/resolver', {
+            params: {
+                project: projectSlug,
+                us: userStorySlug
+            }
+        });
     }
 
     /**
-     * Get a project by id.
-     * @param id - project id
-     * @returns Project or undefined if project does not exist
+     * To resolve the id of a issue by the project and issue slugs
      */
-    async getProject(id: number) : Promise<Project|undefined> {
-        try {
-            const response = await this.instance.get<Project>(`/projects/${id}`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
+    async resolveIssue(projectSlug: string, issueSlug: string) : Promise<IIssueResolve | undefined> {
+        return await this._getRequest<IIssueResolve>('/resolver', {
+            params: {
+                issue: issueSlug,
+                project: projectSlug
+            }
+        });
     }
 
     /**
-     * Get a project by slug.
-     * @param slug - project slug
-     * @returns Project or undefined if project does not exist
+     * To resolve the id of a task by the project and task slugs
      */
-    async getProjectBySlug(slug: string) : Promise<Project|undefined> {
-        try {
-            const response = await this.instance.get<Project>('/projects/by_slug', {
-                params: {
-                    slug
-                }
-            });
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
+    async resolveTask(projectSlug: string, taskSlug: string) : Promise<ITaskResolve | undefined> {
+        return await this._getRequest<ITaskResolve>('/resolver', {
+            params: {
+                task: taskSlug,
+                project: projectSlug
+            }
+        });
     }
 
     /**
-     * All users contact deatail
-     * @param projectId - project id
-     * @returns Array of UserContactDetails or undefined if the project does not exist
+     * To resolve the id of a milestone by the project and milestone slugs
      */
-    async getAllUsersContactDetail(projectId?: number) : Promise<Array<UserContactDetail>|undefined>{
-        try {
-            const response = await this.instance.get<Array<UserContactDetail>>('/users', {
+    async resolveMilestone(projectSlug: string, milestoneSlug: string) : Promise<IMilestoneResolve | undefined> {
+        return await this._getRequest<IMilestoneResolve>('/resolver', {
+            params: {
+                milestone: milestoneSlug,
+                project: projectSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve the id of a wiki page by the project and wiki page slugs
+     */
+    async resolveWikiPage(projectSlug: string, wikiPageSlug: string) : Promise<IWikiPageResolve | undefined> {
+        return await this._getRequest<IWikiPageResolve>('/resolver', {
+            params: {
+                project: projectSlug,
+                wikipage: wikiPageSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve the multiple ids by project, task, user story and wiki page slugs
+     */
+    async resolveMultipleResolution(projectSlug: string, taskSlug: string, userStorySlug: string, wikiPageSlug: string) : Promise<IMultipleResolve | undefined> {
+        return await this._getRequest<IMultipleResolve>('/resolver', {
+            params: {
+                project: projectSlug,
+                task: taskSlug,
+                us: userStorySlug,
+                wikipage: wikiPageSlug
+            }
+        });
+    }
+
+    /**
+     * To resolve an object if we don’t know its type we have to use ref
+     */
+    async resolveByRefValue(projectSlug: string, ref: string) : Promise<IUserStoryResolve | ITaskResolve | IIssueResolve | undefined> {
+        return await this._getRequest<IUserStoryResolve | ITaskResolve | IIssueResolve>('/resolver', {
+            params: {
+                project: projectSlug,
+                ref
+            }
+        });
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // SEARCHES
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To search the text in the project
+     * @param project project id
+     * @param text text for find
+     */
+    async search(project: number, text: string) : Promise<ISearchResults | undefined> {
+        return await this._getRequest<ISearchResults>('/search', {
+            params: {
+                project,
+                text
+            }
+        });
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // USER STORAGE
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get a list of all user storages
+     */
+    async getUserStorageList() : Promise<IUserStorage | undefined> {
+        return await this._getRequest<IUserStorage>('/user-storage');
+    }
+
+    /**
+     * To create a user storage by key and value
+     */
+    async createUserStorage(key: string, value: string) : Promise<IUserStorage | undefined> {
+        return await this._postRequest<IUserStorage>('user-storage', {
+            key,
+            value
+        });
+    }
+
+    /**
+     * To get user storage by key
+     */
+    async getUserStorage(key: string) : Promise<IUserStorage | undefined> {
+        return await this._getRequest<IUserStorage>(`/user-storage/${key}`);
+    }
+
+    /**
+     * To edit the user storage by key
+     */
+    async editUserStorage(key: string, value: string) : Promise<IUserStorage | undefined> {
+        return await this._patchRequest<IUserStorage>(`/user-storage/${key}`, {
+            value
+        });
+    }
+
+    /**
+     * To delete user storage by id
+     */
+    async deleteUserStorage(key: string) : Promise<boolean> {
+        return await this._deleteRequest(`/user-storage/${key}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // PROJECT TEMPLATES
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of all project templates
+     */
+    async getProjectTemplateList() : Promise<IProjectTemplateDetails | undefined> {
+        return await this._getRequest<IProjectTemplateDetails>('/project-templates');
+    }
+
+    /**
+     * To create a new project template
+     */
+    async createProjectTemplate(data: IProjectTemplateDetails) : Promise<IProjectTemplateDetails | undefined> {
+        return await this._postRequest<IProjectTemplateDetails>('/project-templates', data);
+    }
+
+    /**
+     * To get the project template by the id
+     */
+    async getProjectTemplate(id: number) : Promise<IProjectTemplateDetails | undefined> {
+        return await this._getRequest<IProjectTemplateDetails>(`/project-templates/${id}`);
+    }
+
+    /**
+     * To edit the project template
+     */
+    async editProjectTemplate(data: IProjectTemplateDetails) : Promise<IProjectTemplateDetails | undefined> {
+        return await this._putRequest<IProjectTemplateDetails>(`/project-templates/${data.id}`, data);
+    }
+
+    /**
+     * To delete the project template by id
+     */
+    async deleteProjectTemplate(id: number) : Promise<boolean> {
+        return await this._deleteRequest(`/project-templates/${id}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // PROJECTS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get a list of all projects
+     * @param projectFilter to filter the list
+     */
+    async getProjectList(projectFilter?: IProjectFilter) : Promise<Array<IProjectListEntry> | undefined> {
+        return await this._getRequest<Array<IProjectListEntry>>('/projects', {
+            params: projectFilter
+        });
+    }
+
+    /**
+     * To create a project by the data
+     */
+    async createProject(data: IProjectCreateParams) : Promise<IProjectDetail | undefined> {
+        return await this._postRequest<IProjectDetail>('projects', data);
+    }
+
+    /**
+     * To get a project by id
+    */
+    async getProject(projectId: number) : Promise<IProjectDetail | undefined> {
+        return await this._getRequest<IProjectDetail>(`/projects/${projectId}`);
+    }
+
+    /**
+     * To get a project by the slug
+     */
+    async getProjectBySlug(projectSlug: string) : Promise<IProjectDetail | undefined> {
+        return await this._getRequest<IProjectDetail>('/projects/by_slug', {
+            params: {
+                slug: projectSlug
+            }
+        });
+    }
+
+    /**
+     * To edit the projet by the data
+     */
+    async editProject(projectId: number, data: IProjectCreateParams) : Promise<IProjectDetail | undefined> {
+        return await this._putRequest<IProjectDetail>(`/projects/${projectId}`, data);
+    }
+
+    /**
+     * To delete the project by id
+     */
+    async deleteProject(projectId: number) : Promise<boolean> {
+        return await this._deleteRequest(`/projects/${projectId}`);
+    }
+
+    /**
+     * To update the projects order
+     */
+    async bulkUpdateOderProjects(data: Array<IBulkUpdateOrderProject>) : Promise<boolean> {
+        return (await this._postRequest('/projects/bulk_update_order', data)) ? true : false;
+    }
+
+    /**
+     * To get a project modules configuration by project id
+     */
+    async getModulesConfiguration(projectId: number) : Promise<IProjectModulesConfiguration | undefined> {
+        return await this._getRequest<IProjectModulesConfiguration>(`/projects/${projectId}/modules`);
+    }
+
+    /**
+     * To edit a project modules configuration by project id
+     */
+    async editModulesConfiguration(projectId: number, data: IProjectModulesConfiguration) : Promise<boolean> {
+        return (await this._patchRequest(`/projects/${projectId}/modules`, data)) ? true : false;
+    }
+
+    /**
+     * To get the project stats by project id
+     */
+    async getProjectStats(projectId: number) : Promise<IProjectStatsDetail | undefined> {
+        return await this._getRequest<IProjectStatsDetail>(`/projects/${projectId}/stats`);
+    }
+
+    /**
+     * To get a project issue stats by project id
+     */
+    async getProjectIssueStats(projectId: number) : Promise<IProjectIssueStatsDetail | undefined> {
+        return await this._getRequest<IProjectIssueStatsDetail>(`/projects/${projectId}/issues_stats`);
+    }
+
+    /**
+     * To get a project tag colors
+     */
+    async getProjectTagColorsStats(projectId: number) : Promise<IProjectTagColors | undefined> {
+        return await this._getRequest<IProjectTagColors>(`/projects/${projectId}/tags_colors`);
+    }
+
+    /**
+     * To create  a project tag color
+     */
+    async createProjectTagColor(projectId: number, tag: string, color: string) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/create_tag`, {
+            color,
+            tag
+        })) ? true : false;
+    }
+
+    /**
+     * To edit  a project tag color
+     */
+    async editProjectTag(projectId: number, fromTag: string, toTag: string, color: string) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/edit_tag`, {
+            color,
+            from_tag: fromTag,
+            to_tag: toTag
+        })) ? true : false;
+    }
+
+    /**
+     * To delete  a project tag color
+     */
+    async deleteProjectTagColor(projectId: number, tag: string) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/delete_tag`, {
+            tag
+        })) ? true : false;
+    }
+
+    /**
+     * To mix  project tags color
+     */
+    async mixPorjectTagsColors(projectId: number, fromTags: Array<string>, toTag: string) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/mix_tags`, {
+            from_tags: fromTags,
+            to_tag: toTag
+        })) ? true : false;
+    }
+
+    /**
+     * To like the project
+     */
+    async likeProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/like`)) ? true : false;
+    }
+
+    /**
+     * To unlike the project
+     */
+    async unlikeProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/unlike`)) ? true : false;
+    }
+
+    /**
+     * To get the list of fans from the project
+     */
+    async getProjectFansList(projectId: number): Promise<Array<IProjectVoter> | undefined> {
+        return await this._getRequest<Array<IProjectVoter>>(`/projects/${projectId}/fans`);
+    }
+
+    /**
+     * To watch the project
+     */
+    async watchProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/watch`)) ? true : false;
+    }
+
+    /**
+     * To unwatch the project
+     */
+    async unwatchProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/unwatch`)) ? true : false;
+    }
+
+    /**
+     * To get the list of wathers from the project
+     */
+    async getProjectWathersList(projectId: number): Promise<Array<IProjectWatcher> | undefined> {
+        return await this._getRequest<Array<IProjectWatcher>>(`/projects/${projectId}/watchers`);
+    }
+
+    /**
+     * To create a template from the selected project
+     * @param name template name
+     * @param description template description
+     */
+    async createProjectTemplateFromProject(projectId: number, name: string, description: string) : Promise<IProjectTemplateDetails | undefined> {
+        return await this._postRequest(`/projects/${projectId}/create_template`, {
+            template_description: description,
+            template_name: name
+        });
+    }
+
+    /**
+     * To leave the project
+     */
+    async leaveProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/leave`)) ? true : false;
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // TASKS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of tasks
+     * @param taskFilter to filter the list
+     */
+    async getTaskList(taskFilter: ITaskFiltersDataDetail) : Promise<Array<ITaskDetail> | undefined> {
+        return await this._getRequest<Array<ITaskDetail> >('/tasks', {
+            params: taskFilter
+        });
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // TASK CUSTOM ATTRIBUTE
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of task custom atributes
+     */
+    async getTaskCustomAtributeList(projectId?: number) : Promise<Array<ITaskCustomAtributeDetail> | undefined> {
+        if (projectId) {
+            return await this._getRequest<Array<ITaskCustomAtributeDetail> >(`/task-custom-attributes/${projectId}`);
+        }
+        return await this._getRequest<Array<ITaskCustomAtributeDetail> >('/task-custom-attributes');
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // TASK CUSTOM ATTRIBUTES VALUES
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get a task custom attribute
+     * @param id task custom atribute id
+     */
+    async getTaskCustomAtributeValue(id: number) : Promise<ITaskCustomAtributeDetail | undefined> {
+        return await this._getRequest<ITaskCustomAtributeDetail>(`/task-custom-attributes/${id}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // USERS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of users or list
+     */
+    async getUserList(projectId?: number) : Promise<Array<IUserDetail> | undefined> {
+        if (projectId) {
+            return await this._getRequest<Array<IUserDetail>>('/users', {
                 params: {
                     project: projectId
                 }
             });
-            return response.data;
-        } catch (error) {
-            return undefined;
         }
+        return await this._getRequest<Array<IUserDetail>>('/users');
     }
 
     /**
-     * All users contact deatail
-     * @param userId - user id
-     * @returns UserContactDetails or undefined if the user does not exist
+     * To get user by the user id
+     * @param id user id
      */
-    async getUserContactDetail(userId?: number) : Promise<UserContactDetail|undefined>{
-        try {
-            const response = await this.instance.get<UserContactDetail>(`/users/${userId}`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
+    async getUser(id: number) : Promise<IUserDetail | undefined> {
+        return await this._getRequest<IUserDetail>(`/users/${id}`);
     }
 
     /**
-     * All users stats deatail
-     * @param userId - user id
-     * @returns UserContactDetails or undefined if the user does not exist
+     * To get your own user
      */
-    async getUserStats(userId?: number) : Promise<UserStatsDetail|undefined>{
-        try {
-            const response = await this.instance.get<UserStatsDetail>(`/users/${userId}/stats`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
+    async getMe(): Promise<IUserDetail | undefined> {
+        return await this._getRequest<IUserDetail>('/users/me');
     }
 
     /**
-     * Get all tasks
-     * @param options - filter options
-     * @returns Array of Tasks or undefined if project does not exist
+     * To get user stats
+     * @param id user id
      */
-    async getAllTasks(filter?: GetAllTasksFilter) : Promise<Array<Task>|undefined> {
-        try {
-            const response = await this.instance.get<Array<Task>>('/tasks', {
-                params: filter
-            });
-            return response.data;
-        } catch (error) {
-            return undefined;
+    async getUserStats(id: number) : Promise<IUserStatsDetail | undefined> {
+        return await this._getRequest<IUserStatsDetail>(`/users/${id}/stats`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // WIKI PAGES
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list wiki pages
+     */
+    async getWikiPageList(projectId?: number) : Promise<IWikiPageDetail | undefined> {
+        if (projectId) {
+            return await this._getRequest<IWikiPageDetail>(`/wiki/${projectId}`);
         }
+        return await this._getRequest<IWikiPageDetail>('/wiki');
     }
 
     /**
-     * Get all task custom atributes
-     * @param project - project id
-     * @returns Array of TaskCustomAttribute or undefined if project does not exist
+     * To get the wiki page
+     * @param id wiki page id
      */
-    async getAllTaskCustomAttributes(project?: number) : Promise<Array<TaskCustomAttribute>|undefined> {
-        try {
-            const response = await this.instance.get<Array<TaskCustomAttribute>>('/task-custom-attributes', {
-                params: {
-                    project
-                }
-            });
-            return response.data;
-        } catch (error) {
-            return undefined;
+    async getWikiPage(id: number) : Promise<IWikiPageDetail | undefined> {
+        return await this._getRequest<IWikiPageDetail>(`/wiki/${id}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // WIKI LINKS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list wiki links
+     */
+    async getWikiLinkList(projectId?: number) : Promise<Array<IWikiLinkDetail> | undefined> {
+        if (projectId) {
+            return await this._getRequest<Array<IWikiLinkDetail>>(`/wiki-links/${projectId}`);
         }
+        return await this._getRequest<Array<IWikiLinkDetail>>('/wiki-links');
     }
 
     /**
-     * Get task custom atributes
-     * @param attribute - task attribute id
-     * @returns TaskCustomAttribute or undefined if task does not exist
+     * To get the wiki link
+     * @param id wiki link id
      */
-    async getTaskCustomAttributes(attribute: number) : Promise<TaskCustomAttribute|undefined> {
-        try {
-            const response = await this.instance.get<TaskCustomAttribute>(`/task-custom-attributes/${attribute}`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-     /**
-     * Get task custom atribute value
-     * @param project - task id
-     * @returns TaskCustomAttributeValue or undefined if task does not exist
-     */
-    async getTaskCustomAttributeValue(task: number) : Promise<TaskCustomAttributeValue|undefined> {
-        try {
-            const response = await this.instance.get<TaskCustomAttributeValue>(`/tasks/custom-attributes-values/${task}`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-
-    /**
-     * Get all wiki pages
-     * @param project - project id filtered
-     * @returns Array of WikiPages or undefined if project does not exist
-     */
-    async getAllWikiPages(project?: number) : Promise<Array<WikiPage>|undefined> {
-        try {
-            const response = await this.instance.get<Array<WikiPage>>('/wiki', {
-                params: {
-                    project
-                }
-            });
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-    /**
-     * Get a wiki page by id.
-     * @param id - wiki page id
-     * @returns WikiPage or undefined if wiki page does not exist
-     */
-    async getWikiPage(id: number) : Promise<WikiPage|undefined> {
-        try {
-            const response = await this.instance.get<WikiPage>(`/wiki/${id}`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-
-    /**
-     * Get all wiki links
-     * @param project - project id filtered
-     * @returns Array of WikiLinks or undefined if project does not exist
-     */
-    async getAllWikiLinks(project?: number) : Promise<Array<WikiLink>|undefined> {
-        try {
-            const response = await this.instance.get<Array<WikiLink>>('/wiki-links', {
-                params: {
-                    project
-                }
-            });
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-    /**
-     * Get a wiki link by id.
-     * @param id - wiki link id
-     * @returns WikiLink or undefined if wiki link does not exist
-     */
-    async getWikiLink(id: number) : Promise<WikiLink|undefined> {
-        try {
-            const response = await this.instance.get<WikiLink>(`/wiki-links/${id}`);
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
+    async getWikiLink(id: number) : Promise<IWikiLinkDetail | undefined> {
+        return await this._getRequest<IWikiLinkDetail>(`/wiki-links/${id}`);
     }
 }
-
-class TaigaAuthClient extends TaigaBaseClient {
-
-    private isLogin = false;
-
-    /**
-     * Class initialize: authorization
-     * @param url - your organization's taiga site
-     */
-    constructor(url: string) {
-        super(url);
-    }
-
-    /**
-     * Class initialize: authorization
-     * @param login in taiga
-     * @param password in taiga
-     */
-    async init(login: string, password: string) : Promise<boolean> {
-        const loginData = await this.login(login, password);
-        if (loginData) {
-            const auth_token = loginData.auth_token;
-            try {
-                this.instance = axios.create({
-                    baseURL: this.url,
-                    headers: {
-                        'Content-Type': 'application/json;charset=utf-8',
-                        'Authorization': `Bearer ${auth_token}`,
-                        'x-disable-pagination': 'True'
-                    }
-                });
-                return true;
-            } catch (error) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    private async _login(login: string, password: string) : Promise<UserAuthDetail|undefined> {
-        try {
-            const response = await this.instance.post<UserAuthDetail>('/auth', {
-                type: 'normal',
-                username: login,
-                password
-            });
-            this.isLogin = true;
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-    /**
-     * Create a project by id
-     * @returns is this project created
-     */
-    async createProject(options: CreateProjectOptions) : Promise<boolean>{
-        if (!this.isLogin) {
-            return false;
-        }
-        try {
-            await this.instance.post('/projects', options);
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    /**
-     * Edit project name or/and project description
-     * @param id - project id
-     * @param name - new project name
-     * @param description - new project description
-     * @returns is this project changed
-     */
-    async editProject(id: number, name?: string, description?: string) : Promise<boolean>{
-        if (!this.isLogin) {
-            return false;
-        }
-        try {
-            await this.instance.patch(`/projects/${id}`, {
-                name,
-                description
-            });
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    /**
-     * Delete project
-     * @param id - project id
-     * @returns is this project deleted
-     */
-    async deleteProject(id: number) : Promise<boolean>{
-        if (!this.isLogin) {
-            return false;
-        }
-        try {
-            await this.instance.delete(`/projects/${id}`);
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    /**
-     * Get your contact detail
-     * @param id - project id
-     * @returns your contact detail data or undefined if there is no login
-     */
-    async getMeContactDetail() : Promise<UserDetail|undefined>{
-        if (!this.isLogin) {
-            return undefined;
-        }
-        try {
-            const response = await this.instance.get<UserDetail>('/users/me');
-            return response.data;
-        } catch (error) {
-            return undefined;
-        }
-    }
-
-    /**
-     * Create a wiki page by id
-     * @param id - project id
-     * @param slug - short page name
-     * @param content - page written in text/html/markdown format
-     * @param watchers - array of watchers id
-     * @returns is this page created
-     */
-    async createWikiPage(id: number, slug: string, content: string, watchers: Array<number>) : Promise<boolean>{
-        if (!this.isLogin) {
-            return false;
-        }
-
-        try {
-            await this.instance.post('/wiki', {
-                project: id,
-                slug,
-                content,
-                watchers
-            });
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
-}
-
-export type { TaigaBaseClient, TaigaAuthClient };

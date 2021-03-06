@@ -79,31 +79,31 @@ export interface ITaskDetail {
 }
 
 export interface ITaskFiltersDataDetail {
-    assigned_to: Array<{
+    assigned_to?: Array<{
         count: number
         full_name: string
         id: number | null
     }>
-    owners: Array<{
+    owners?: Array<{
         count: number
         full_name: string
         id: number
     }>
-    roles: Array<{
+    roles?: Array<{
         color: string | null
         count: number
         id: number
         name: string
         order: number
     }>
-    statuses: Array<{
+    statuses?: Array<{
         color: string
         count: number
         id: number
         name: string
         order: number
     }>
-    tags: Array<{
+    tags?: Array<{
         color: string | null
         count: number
         name: string

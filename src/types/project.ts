@@ -80,13 +80,13 @@ export type IProjectOrderBy = 'memberships__user_order' |
 
 
 export interface IProjectFilter {
-    member: number
-    members: Array<number>
-    is_looking_for_people: boolean
-    is_featured: boolean
-    is_backlog_activated: boolean
-    is_kanban_activated: boolean
-    order_by: IProjectOrderBy
+    member?: number
+    members?: Array<number>
+    is_looking_for_people?: boolean
+    is_featured?: boolean
+    is_backlog_activated?: boolean
+    is_kanban_activated?: boolean
+    order_by?: IProjectOrderBy
 }
 
 export type IProjectVideoconference = 'whereby-com' | 'jitsi' | 'talky' | 'custom'
