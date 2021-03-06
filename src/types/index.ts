@@ -1,6 +1,7 @@
 export * from './auth';
 export * from './applications';
 export * from './base';
+export * from './history';
 export * from './project-template';
 export * from './project';
 export * from './resolver';

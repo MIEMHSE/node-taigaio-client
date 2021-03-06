@@ -35,7 +35,9 @@ import {
     IUserStoryResolve,
     IWikiLinkDetail,
     IWikiPageDetail,
-    IWikiPageResolve
+    IWikiPageResolve,
+    IHistoryEntry,
+    HistoryPageT
 } from './types';
 
 export class TaigaClient {
@@ -769,47 +771,6 @@ export class TaigaClient {
     }
 
     // //////////////////////////////////////////////////////////////////////////////
-    // USERS
-    // //////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * To get list of users or list
-     */
-    async getUserList(projectId?: number) : Promise<Array<IUserDetail> | undefined> {
-        if (projectId) {
-            return await this._getRequest<Array<IUserDetail>>('/users', {
-                params: {
-                    project: projectId
-                }
-            });
-        }
-        return await this._getRequest<Array<IUserDetail>>('/users');
-    }
-
-    /**
-     * To get user by the user id
-     * @param id user id
-     */
-    async getUser(id: number) : Promise<IUserDetail | undefined> {
-        return await this._getRequest<IUserDetail>(`/users/${id}`);
-    }
-
-    /**
-     * To get your own user
-     */
-    async getMe(): Promise<IUserDetail | undefined> {
-        return await this._getRequest<IUserDetail>('/users/me');
-    }
-
-    /**
-     * To get user stats
-     * @param id user id
-     */
-    async getUserStats(id: number) : Promise<IUserStatsDetail | undefined> {
-        return await this._getRequest<IUserStatsDetail>(`/users/${id}/stats`);
-    }
-
-    // //////////////////////////////////////////////////////////////////////////////
     // WIKI PAGES
     // //////////////////////////////////////////////////////////////////////////////
 
@@ -859,5 +820,59 @@ export class TaigaClient {
      */
     async getWikiLink(id: number) : Promise<IWikiLinkDetail | undefined> {
         return await this._getRequest<IWikiLinkDetail>(`/wiki-links/${id}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // HISTORY
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get the history of a user story, task, issue or wiki page
+     * @param pageType history of a user story, task, issue or wiki page
+     * @param id the url id
+     */
+    async getHistory(pageType: HistoryPageT, id: number) : Promise<IHistoryEntry | unknown> {
+        return await this._getRequest(`/history/${pageType}/${id}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // USERS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of users or list
+     */
+    async getUserList(projectId?: number) : Promise<Array<IUserDetail> | undefined> {
+        if (projectId) {
+            return await this._getRequest<Array<IUserDetail>>('/users', {
+                params: {
+                    project: projectId
+                }
+            });
+        }
+        return await this._getRequest<Array<IUserDetail>>('/users');
+    }
+
+    /**
+     * To get user by the user id
+     * @param id user id
+     */
+    async getUser(id: number) : Promise<IUserDetail | undefined> {
+        return await this._getRequest<IUserDetail>(`/users/${id}`);
+    }
+
+    /**
+     * To get your own user
+     */
+    async getMe(): Promise<IUserDetail | undefined> {
+        return await this._getRequest<IUserDetail>('/users/me');
+    }
+
+    /**
+     * To get user stats
+     * @param id user id
+     */
+    async getUserStats(id: number) : Promise<IUserStatsDetail | undefined> {
+        return await this._getRequest<IUserStatsDetail>(`/users/${id}/stats`);
     }
 }

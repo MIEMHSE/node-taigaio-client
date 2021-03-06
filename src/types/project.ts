@@ -68,7 +68,7 @@ export interface IProjectListEntry {
     videoconferences_extra_data: string | null
 }
 
-export type IProjectOrderBy = 'memberships__user_order' |
+export type ProjectOrderByT = 'memberships__user_order' |
 'total_fans' |
 'total_fans_last_week' |
 'total_fans_last_month' |
@@ -86,10 +86,10 @@ export interface IProjectFilter {
     is_featured?: boolean
     is_backlog_activated?: boolean
     is_kanban_activated?: boolean
-    order_by?: IProjectOrderBy
+    order_by?: ProjectOrderByT
 }
 
-export type IProjectVideoconference = 'whereby-com' | 'jitsi' | 'talky' | 'custom'
+export type ProjectVideoconferenceT = 'whereby-com' | 'jitsi' | 'talky' | 'custom'
 
 export interface IProjectCreateParams {
     name: string
@@ -100,7 +100,7 @@ export interface IProjectCreateParams {
     is_kanban_activated: boolean
     is_private: boolean
     is_wiki_activated: boolean
-    videoconferences: IProjectVideoconference
+    videoconferences: ProjectVideoconferenceT
     videoconferences_extra_data: string | null
     total_milestones: number
     total_story_points: number
