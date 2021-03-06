@@ -3,8 +3,13 @@ import { IUserStorage } from './types/user-storage';
 import { ISearchResults } from './types/search';
 import { IProjectResolve, IUserStoryResolve, IIssueResolve, ITaskResolve, IMilestoneResolve, IWikiPageResolve, IMultipleResolve } from './types/resolver';
 import { IAuthorizationCode, ICypheredToken } from './types/auth';
-import { IPrivateRegistryParams, IPublicRegistryParams, IUserAuthenticationDetail, IApplication, IApplicationToken } from './types';
+import { IPrivateRegistryParams, IPublicRegistryParams, IUserAuthenticationDetail, IApplication, IApplicationToken, IProjectListEntry, IProjectFilter, IProjectCreateParams, IProjectDetail, IBulkUpdateOrderProject, IProjectModulesConfiguration, IProjectStatsDetail, IProjectIssueStatsDetail, IProjectTagColors, IProjectVoter, IProjectWatcher } from './types';
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { IUserDetail, IUserStatsDetail } from './types/user';
+import { ITaskDetail, ITaskFiltersDataDetail } from './types/task';
+import { ITaskCustomAtributeDetail } from './types/task-custom-atribute';
+import { IWikiPageDetail } from './types/wikipage';
+import { IWikiLinkDetail } from './types/wiki-links';
 
 export class TaigaClient {
     private _url: string;
@@ -499,4 +504,321 @@ export class TaigaClient {
     // //////////////////////////////////////////////////////////////////////////////
     // PROJECTS
     // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get a list of all projects
+     * @param projectFilter to filter the list
+     */
+    async getProjectList(projectFilter?: IProjectFilter) : Promise<Array<IProjectListEntry> | undefined> {
+        return await this._getRequest<Array<IProjectListEntry>>('/projects', {
+            params: projectFilter
+        });
+    }
+
+    /**
+     * To create a project by the data
+     */
+    async createProject(data: IProjectCreateParams) : Promise<IProjectDetail | undefined> {
+        return await this._postRequest<IProjectDetail>('projects', data);
+    }
+
+    /**
+     * To get a project by id
+    */
+    async getProject(projectId: number) : Promise<IProjectDetail | undefined> {
+        return await this._getRequest<IProjectDetail>(`/projects/${projectId}`);
+    }
+
+    /**
+     * To get a project by the slug
+     */
+    async getProjectBySlug(projectSlug: string) : Promise<IProjectDetail | undefined> {
+        return await this._getRequest<IProjectDetail>('/projects/by_slug', {
+            params: {
+                slug: projectSlug
+            }
+        });
+    }
+
+    /**
+     * To edit the projet by the data
+     */
+    async editProject(projectId: number, data: IProjectCreateParams) : Promise<IProjectDetail | undefined> {
+        return await this._putRequest<IProjectDetail>(`/projects/${projectId}`, data);
+    }
+
+    /**
+     * To delete the project by id
+     */
+    async deleteProject(projectId: number) : Promise<boolean> {
+        return await this._deleteRequest(`/projects/${projectId}`);
+    }
+
+    /**
+     * To update the projects order
+     */
+    async bulkUpdateOderProjects(data: Array<IBulkUpdateOrderProject>) : Promise<boolean> {
+        return (await this._postRequest('/projects/bulk_update_order', data)) ? true : false;
+    }
+
+    /**
+     * To get a project modules configuration by project id
+     */
+    async getModulesConfiguration(projectId: number) : Promise<IProjectModulesConfiguration | undefined> {
+        return await this._getRequest(`/projects/${projectId}/modules`);
+    }
+
+    /**
+     * To edit a project modules configuration by project id
+     */
+    async editModulesConfiguration(projectId: number, data: IProjectModulesConfiguration) : Promise<boolean> {
+        return (await this._patchRequest(`/projects/${projectId}/modules`, data)) ? true : false;
+    }
+
+    /**
+     * To get the project stats by project id
+     */
+    async getProjectStats(projectId: number) : Promise<IProjectStatsDetail | undefined> {
+        return await this._getRequest<IProjectStatsDetail>(`/projects/${projectId}/stats`);
+    }
+
+    /**
+     * To get a project issue stats by project id
+     */
+    async getProjectIssueStats(projectId: number) : Promise<IProjectIssueStatsDetail | undefined> {
+        return await this._getRequest<IProjectIssueStatsDetail>(`/projects/${projectId}/issues_stats`);
+    }
+
+    /**
+     * To get a project tag colors
+     */
+    async getProjectTagColorsStats(projectId: number) : Promise<IProjectTagColors | undefined> {
+        return await this._getRequest<IProjectTagColors>(`/projects/${projectId}/tags_colors`);
+    }
+
+    /**
+     * To create  a project tag color
+     */
+    async createProjectTagColor(projectId: number, tag: string, color: string) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/create_tag`, {
+            color,
+            tag
+        })) ? true : false;
+    }
+
+    /**
+     * To edit  a project tag color
+     */
+    async editProjectTag(projectId: number, fromTag: string, toTag: string, color: string) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/edit_tag`, {
+            color,
+            from_tag: fromTag,
+            to_tag: toTag
+        })) ? true : false;
+    }
+
+    /**
+     * To delete  a project tag color
+     */
+    async deleteProjectTagColor(projectId: number, tag: string) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/delete_tag`, {
+            tag
+        })) ? true : false;
+    }
+
+    /**
+     * To mix  project tags color
+     */
+    async mixPorjectTagsColors(projectId: number, fromTags: Array<string>, toTag: string) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/mix_tags`, {
+            from_tags: fromTags,
+            to_tag: toTag
+        })) ? true : false;
+    }
+
+    /**
+     * To like the project
+     */
+    async likeProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/like`)) ? true : false;
+    }
+
+    /**
+     * To unlike the project
+     */
+    async unlikeProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/unlike`)) ? true : false;
+    }
+
+    /**
+     * To get the list of fans from the project
+     */
+    async getProjectFansList(projectId: number): Promise<Array<IProjectVoter> | undefined> {
+        return await this._getRequest<Array<IProjectVoter>>(`/projects/${projectId}/fans`);
+    }
+
+    /**
+     * To watch the project
+     */
+    async watchProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/watch`)) ? true : false;
+    }
+
+    /**
+     * To unwatch the project
+     */
+    async unwatchProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/unwatch`)) ? true : false;
+    }
+
+    /**
+     * To get the list of wathers from the project
+     */
+    async getProjectWathersList(projectId: number): Promise<Array<IProjectWatcher> | undefined> {
+        return await this._getRequest<Array<IProjectWatcher>>(`/projects/${projectId}/watchers`);
+    }
+
+    /**
+     * To create a template from the selected project
+     * @param name template name
+     * @param description template description
+     */
+    async createProjectTemplateFromProject(projectId: number, name: string, description: string) : Promise<IProjectTemplateDetails | undefined> {
+        return await this._postRequest(`/projects/${projectId}/create_template`, {
+            template_description: description,
+            template_name: name
+        });
+    }
+
+    /**
+     * To leave the project
+     */
+    async leaveProject(projectId: number) : Promise<boolean> {
+        return (await this._postRequest(`/projects/${projectId}/leave`)) ? true : false;
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // TASKS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of tasks
+     * @param taskFilter to filter the list
+     */
+    async getTaskList(taskFilter: ITaskFiltersDataDetail) : Promise<Array<ITaskDetail> | undefined> {
+        return await this._getRequest<Array<ITaskDetail> >('/tasks', {
+            params: taskFilter
+        });
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // TASK CUSTOM ATTRIBUTE
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of task custom atributes
+     */
+    async getTaskCustomAtributeList(projectId?: number) : Promise<Array<ITaskCustomAtributeDetail> | undefined> {
+        if (projectId) {
+            return await this._getRequest<Array<ITaskCustomAtributeDetail> >(`/task-custom-attributes/${projectId}`);
+        }
+        return await this._getRequest<Array<ITaskCustomAtributeDetail> >('/task-custom-attributes');
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // TASK CUSTOM ATTRIBUTES VALUES
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get a task custom attribute
+     * @param id task custom atribute id
+     */
+    async getTaskCustomAtributeValue(id: number) : Promise<ITaskCustomAtributeDetail | undefined> {
+        return await this._getRequest<ITaskCustomAtributeDetail>(`/task-custom-attributes/${id}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // USERS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of users or list
+     */
+    async getUserList(projectId?: number) : Promise<Array<IUserDetail> | undefined> {
+        if (projectId) {
+            return await this._getRequest<Array<IUserDetail>>('/users', {
+                params: {
+                    project: projectId
+                }
+            });
+        }
+        return await this._getRequest<Array<IUserDetail>>('/users');
+    }
+
+    /**
+     * To get user by the user id
+     * @param id user id
+     */
+    async getUser(id: number) : Promise<IUserDetail | undefined> {
+        return await this._getRequest<IUserDetail>(`/users/${id}`);
+    }
+
+    /**
+     * To get your own user
+     */
+    async getMe(): Promise<IUserDetail | undefined> {
+        return await this._getRequest<IUserDetail>('/users/me');
+    }
+
+    /**
+     * To get user stats
+     * @param id user id
+     */
+    async getUserStats(id: number) : Promise<IUserStatsDetail | undefined> {
+        return await this._getRequest<IUserStatsDetail>(`/users/${id}/stats`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // WIKI PAGES
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list wiki pages
+     */
+    async getWikiPageList(projectId?: number) : Promise<IWikiPageDetail | undefined> {
+        if (projectId) {
+            return await this._getRequest<IWikiPageDetail>(`/wiki/${projectId}`);
+        }
+        return await this._getRequest<IWikiPageDetail>('/wiki');
+    }
+
+    /**
+     * To get the wiki page
+     * @param id wiki page id
+     */
+    async getWikiPage(id: number) : Promise<IWikiPageDetail | undefined> {
+        return await this._getRequest<IWikiPageDetail>(`/wiki/${id}`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // WIKI LINKS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list wiki links
+     */
+    async getWikiLinkList(projectId?: number) : Promise<Array<IWikiLinkDetail> | undefined> {
+        if (projectId) {
+            return await this._getRequest<Array<IWikiLinkDetail>>(`/wiki-links/${projectId}`);
+        }
+        return await this._getRequest<Array<IWikiLinkDetail>>('/wiki-links');
+    }
+
+    /**
+     * To get the wiki link
+     * @param id wiki link id
+     */
+    async getWikiLink(id: number) : Promise<IWikiLinkDetail | undefined> {
+        return await this._getRequest<IWikiLinkDetail>(`/wiki-links/${id}`);
+    }
 }

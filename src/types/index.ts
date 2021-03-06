@@ -4,6 +4,8 @@ export * from './applications';
 export * from './resolver';
 export * from './search';
 export * from './user-storage';
+export * from './project-template';
+export * from './project';
 
 export interface Project {
     id: number
