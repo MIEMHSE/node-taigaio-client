@@ -4,7 +4,20 @@ export interface IHistoryEntry {
     created_at: string
     delete_comment_date: string | null
     delete_comment_user: string | null
-    diff: unknown
+    diff: {
+        content?: Array<string>
+        content_html?: Array<string>
+        attachments?: Array<Array<{
+            id: number
+            url: string
+            order: number
+            filename: string
+            description: string
+            attached_file: string
+            is_deprecated: boolean
+            thumbnail_file: string
+        }>>
+    }
     edit_comment_date: string | null
     id: string
     is_hidden: boolean
@@ -23,7 +36,9 @@ export interface IHistoryEntry {
     values: {
         users: unknown
     }
-    values_diff: unknown
+    values_diff: {
+        content_diff: Array<string | null>
+    }
 }
 
 export type HistoryPageT = 'userstory' | 'task' | 'issue' | 'wiki';

@@ -831,8 +831,8 @@ export class TaigaClient {
      * @param pageType history of a user story, task, issue or wiki page
      * @param id the url id
      */
-    async getHistory(pageType: HistoryPageT, id: number) : Promise<IHistoryEntry | unknown> {
-        return await this._getRequest(`/history/${pageType}/${id}`);
+    async getHistory(pageType: HistoryPageT, id: number) : Promise<Array<IHistoryEntry> | undefined> {
+        return await this._getRequest<Array<IHistoryEntry>>(`/history/${pageType}/${id}`);
     }
 
     // //////////////////////////////////////////////////////////////////////////////
