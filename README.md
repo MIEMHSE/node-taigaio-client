@@ -5,69 +5,44 @@
 </a>
 
 ## Create client
-You should import _TaigaClientFactory_ and use _.createBaseClient_ or _.createAuthClient_
+You should import _TaigaClient_
 
-### Base client
-You can use GET functions without authentication
+## Example
 
-### Auth client
-You can use POST functions only with authentication
-
-## Examples
-
-- Create Base Client and get information about all projects and filter by is_backlog_activated: true and order by total_fans
-```typescript
-import { TaigaClientFactory } from './index';
-import { ProjectsOrderBy } from './index';
-
-(async() => {
-    const client = await TaigaClientFactory.createBaseClient();
-
-
-    console.log((await client.getAllProjects({
-        is_backlog_activated: true
-    }, ProjectsOrderBy.TOTAL_FANS)));
-
-})().catch((err: unknown) => {
-    console.log(err);
-});
-```
-
-- Create Auth Client and create a new project, authentication with dotenv
-
-.env:
-```text
-TAIGA_URL=url
-TAIGA_LOGIN=login
-TAIGA_PASSWORD=password
-```
+- Create Client and get information about all projects and filter by is_backlog_activated: true and order by total_fans
 
 ```typescript
-import { resolve } from 'path';
-import { config } from 'dotenv';
-config({ path: resolve(__dirname, '../.env') });
+import { TaigaClient } from 'taigaio-client';
 
-import { TaigaClientFactory } from './index';
+(async () => {
+    const client = new TaigaClient('localhost:8080', '<usertoken>');
 
-
-(async() => {
-    const client = await TaigaClientFactory.createAuthClient();
-
-    console.log((await client.createProject({
-        creation_template: 1,
-        description: 'The best project',
+    const filteredProjects = await client.getProjectList({
         is_backlog_activated: true,
-        is_issues_activated: true,
-        is_kanban_activated: true,
-        is_private: true,
-        is_wiki_activated: true,
-        name: 'Super Project',
-        total_milestones: 0,
-        total_story_points: 0
-    })));
+        order_by: 'total_fans'
+    });
+
 })().catch((err: unknown) => {
     console.log(err);
 });
 ```
 
+- or the same thing, but with normal login
 
+```typescript
+import { TaigaClient } from 'taigaio-client';
+
+(async () => {
+    const client = new TaigaClient('localhost:8080');
+
+    await client.normalLogin('<username>', '<password>');
+
+    const filteredProjects = await client.getProjectList({
+        is_backlog_activated: true,
+        order_by: 'total_fans'
+    });
+
+})().catch((err: unknown) => {
+    console.log(err);
+});
+```
