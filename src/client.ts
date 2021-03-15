@@ -37,7 +37,9 @@ import {
     IWikiPageDetail,
     IWikiPageResolve,
     IHistoryEntry,
-    HistoryPageT
+    HistoryPageT,
+    IWebhook,
+    IWebhookLog
 } from './types';
 
 export class TaigaClient {
@@ -840,7 +842,7 @@ export class TaigaClient {
     // //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * To get list of users or list
+     * To get list of users
      */
     async getUserList(projectId?: number) : Promise<Array<IUserDetail> | undefined> {
         if (projectId) {
@@ -874,5 +876,105 @@ export class TaigaClient {
      */
     async getUserStats(id: number) : Promise<IUserStatsDetail | undefined> {
         return await this._getRequest<IUserStatsDetail>(`/users/${id}/stats`);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////
+    // WEBHOOKS
+    // //////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * To get list of webhooks
+     */
+    async getWebhookList(projectId?: number) : Promise<Array<IWebhook> | undefined> {
+        if (projectId) {
+            return await this._getRequest<Array<IWebhook>>('/webhooks', {
+                params: {
+                    project: projectId
+                }
+            });
+        }
+        return await this._getRequest<Array<IWebhook>>('/webhooks');
+    }
+
+    /**
+     * To create a webhook
+     * @param url payload url
+     * @param key secret key
+     */
+    async createWebhook(projectId: number, name: string, url: string, key: string) : Promise<IWebhook | undefined> {
+        return await this._postRequest<IWebhook>('/webhooks', {
+            key,
+            name,
+            project: projectId,
+            url
+        });
+    }
+
+    /**
+     * To get the webhook by the id
+     * @param id webhook id
+     */
+    async getWebhook(id: number) : Promise<IWebhook | undefined> {
+        return await this._getRequest(`/webhooks/${id}`);
+    }
+
+    /**
+     * To edit the webhook
+     * @param id webhook id
+     */
+    async editWebhook(id: number, projectId?: number, name?: string, url?: string, key?: string) : Promise<IWebhook | undefined> {
+        return await this._patchRequest(`/webhooks/${id}`, {
+            key,
+            name,
+            project: projectId,
+            url
+        });
+    }
+
+    /**
+     * To delete the webhook
+     * @param id webhook id
+     */
+    async deleteWebhook(id: number) : Promise<boolean> {
+        return await this._deleteRequest(`/webhooks/${id}`);
+    }
+
+    /**
+     * To test a webhook
+     * @param id webhook id
+     */
+    async testWebhook(id: number) : Promise<IWebhookLog | undefined> {
+        return await this._postRequest(`/webhooks/${id}/test`);
+    }
+
+    /**
+     * To get webhook logs list
+     * @param id webhook id
+     */
+    async getLogList(id?: number) : Promise<Array<IWebhookLog> | undefined> {
+        if (id) {
+            return await this._getRequest<Array<IWebhookLog>>('/webhooklogs', {
+                params: {
+                    webhook: id
+                }
+            });
+        }
+        return await this._getRequest<Array<IWebhookLog>>('/webhooklogs');
+    }
+
+    /**
+     * To get webhook log
+     * @param id webhook log id
+     */
+    async getLog(id: number) : Promise<IWebhookLog | undefined> {
+        return await this._getRequest<IWebhookLog>(`/webhooklogs/${id}`);
+    }
+
+    /**
+     * To resend a request from a webhook log
+     * @param id webhook log id
+     */
+    async resendWebhookLogRequest(id: number) : Promise<IWebhookLog | undefined> {
+        return await this._postRequest<IWebhookLog>(`/webhooklogs/${id}/resend`);
     }
 }

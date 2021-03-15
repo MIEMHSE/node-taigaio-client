@@ -10,5 +10,6 @@ export * from './task-custom-atribute';
 export * from './task';
 export * from './user-storage';
 export * from './user';
+export * from './webhook';
 export * from './wiki-link';
 export * from './wikipage';
