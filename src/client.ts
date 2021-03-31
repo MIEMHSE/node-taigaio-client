@@ -743,6 +743,14 @@ export class TaigaClient {
         });
     }
 
+    /**
+     * To get task by id
+     * @param id task id
+     */
+    async getTask(id: number) : Promise<ITaskDetail | undefined> {
+        return await this._getRequest<ITaskDetail>(`/tasks/${id}`);
+    }
+
     // //////////////////////////////////////////////////////////////////////////////
     // TASK CUSTOM ATTRIBUTE
     // //////////////////////////////////////////////////////////////////////////////
