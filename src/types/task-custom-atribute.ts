@@ -9,3 +9,9 @@ export interface ITaskCustomAtributeDetail {
     project: number
     type: string
 }
+
+export interface ITaskCustomAtributeValueDetail {
+    attributes_values: {[name: string] : string}
+    task: number
+    version: number
+}

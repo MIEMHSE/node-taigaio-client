@@ -25,6 +25,7 @@ import {
     IPublicRegistryParams,
     ISearchResults,
     ITaskCustomAtributeDetail,
+    ITaskCustomAtributeValueDetail,
     ITaskDetail,
     ITaskFiltersDataDetail,
     ITaskResolve,
@@ -770,6 +771,13 @@ export class TaigaClient {
      */
     async getTaskCustomAtributeValue(id: number) : Promise<ITaskCustomAtributeDetail | undefined> {
         return await this._getRequest<ITaskCustomAtributeDetail>(`/task-custom-attributes/${id}`);
+    }
+
+    /**
+     * To get all task atributes values from the task
+     */
+    async getTaskCustomAtributeValueByTask(taskId: number) : Promise<ITaskCustomAtributeValueDetail | undefined> {
+        return await this._getRequest<ITaskCustomAtributeValueDetail>(`/tasks/custom-attributes-values/${taskId}`);
     }
 
     // //////////////////////////////////////////////////////////////////////////////
