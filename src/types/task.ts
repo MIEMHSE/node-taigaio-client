@@ -79,19 +79,19 @@ export interface ITaskDetail {
 }
 
 export interface ITaskFiltersDataDetail {
-    project: number
-    status: number
-    tags: string
-    user_story: number
-    role: number
-    owner: number
-    milestone: number
-    watchers: number
-    assigned_to: number
-    status__is_closed: boolean
-    exclude_status: number
-    exclude_tags: string
-    exclude_role: number
-    exclude_owner: number
-    exclude_assigned_to: number
+    project?: number
+    status?: number
+    tags?: string
+    user_story?: number
+    role?: number
+    owner?: number
+    milestone?: number
+    watchers?: number
+    assigned_to?: number
+    status__is_closed?: boolean
+    exclude_status?: number
+    exclude_tags?: string
+    exclude_role?: number
+    exclude_owner?: number
+    exclude_assigned_to?: number
 }
